@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "io.h": "c"
+    },
+    "AVR.source.compiler": "C:/WinAVR/bin/avr-gcc.exe",
+    "AVR.programmer.tool": "C:/WinAVR/bin/avrdude.exe",
+    "AVR.programmer.definitions": "C:/WinAVR/bin/avrdude.conf",
+    "AVR.source.libraries": [
+        "C:\\AVRLibC\\include",
+        "C:\\AVRLibC\\include\\avr"
+    ],
+    "AVR.device.type": "atmega32u4",
+    "AVR.device.frequency": 16000000
+}
