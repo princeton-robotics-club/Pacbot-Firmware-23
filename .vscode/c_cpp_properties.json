@@ -20,7 +20,9 @@
             "cppStandard": "c++11",
             "intelliSenseMode": "gcc-x64",
             "compilerArgs": [
-                "-mmcu=atmega32u4"
+                "-mmcu=atmega32u4",
+                "-Wl,-u,-vfprintf",
+                "-lprintf_flt"
             ]
         },
         {

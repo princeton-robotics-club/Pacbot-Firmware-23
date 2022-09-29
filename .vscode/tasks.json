@@ -5,7 +5,6 @@
             "label": "C/C++: avr-gcc.exe build active file",
             "command": "C:/WinAVR/bin/avr-gcc.exe",
             "args": [
-                "-fdiagnostics-color=always",
                 "-g",
                 "${file}",
                 "-o",
