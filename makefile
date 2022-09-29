@@ -1,17 +1,25 @@
+# The worst makefile ever produced but should work with any similarly structured AVR projects
+
 PROJECT_NAME=BNO055SimpleLib
 MCU=atmega32u4
 
-AID= # add any additional include directories.
+# add any additional include directories (AIDs).
+AID=
 
-# The worst makefile you've ever seen #
-
+OUT_PATH=Output
 OBJ_PATH=Output/Obj/
 DFU-P=dfu-programmer
+
+# Edit above
+# Don't edit below
 
 C_SOURCES:=$(wildcard *.c)
 O_SOURCES:=$(patsubst %.c, $(OBJ_PATH)%.o, $(C_SOURCES))
 
 AID_FORMAT:=$(patsubst %, -I%, $(AID))
+
+# Don't edit above
+# Edit below
 
 CC=avr-gcc
 
@@ -20,20 +28,29 @@ COMPILER_ARGS=-DDEBUG -O1 $(DASH_F_ARGS) -Wall $(AID_FORMAT) -mmcu=atmega32u4 -s
 
 LINKER_ARGS=-Wl,-Map="Output/$(PROJECT_NAME).map" -Wl,-u,vfprintf -Wl,--start-group -Wl,-lm  -Wl,--end-group -Wl,--gc-sections -mmcu=atmega32u4 -lprintf_flt
 
-flash: Output/output.hex
+# Edit above
+# Don't edit below
+
+flash: $(OUT_PATH)/$(PROJECT_NAME).hex
 	@echo flashing chip
 	$(DFU-P) $(MCU) erase
 	$(DFU-P) $(MCU) flash $<
 	@echo
 
-hexfile: Output/output.hex
+binfile: $(OUT_PATH)/$(PROJECT_NAME).bin
+hexfile: $(OUT_PATH)/$(PROJECT_NAME).hex
 
-Output/output.hex: Output/output.elf
+$(OUT_PATH)/$(PROJECT_NAME).bin: $(OUT_PATH)/$(PROJECT_NAME).elf
+	@echo Copying Elf to Bin
+	avr-objcopy -O binary $< $@
+	@echo
+
+$(OUT_PATH)/$(PROJECT_NAME).hex: $(OUT_PATH)/$(PROJECT_NAME).elf
 	@echo Copying Elf to Hex
 	avr-objcopy -O ihex $< $@
 	@echo
 
-Output/output.elf: $(O_SOURCES)
+$(OUT_PATH)/$(PROJECT_NAME).elf: $(O_SOURCES)
 	@echo Linking object files into ELF file
 	$(CC) -o $@ $(O_SOURCES) $(LINKER_ARGS)  
 	@echo 
@@ -47,13 +64,13 @@ $(OBJ_PATH)%.o: %.c | output_folder
 # Generates the output folders if need be
 output_folder:
 	@echo Making output directories
-	mkdir -p Output
-	mkdir -p Output/Obj
+	mkdir -p $(OUT_PATH)
+	mkdir -p $(OBJ_PATH)
 	@echo
 
 print:
 	@echo $(AID_FORMAT)
 
 clean:
-	rm -r Output
+	rm -r $(OUT_PATH)
 	
