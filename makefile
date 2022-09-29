@@ -1,22 +1,24 @@
 PROJECT_NAME=BNO055SimpleLib
+MCU=atmega32u4
+
+AID= # add any additional include directories.
 
 # The worst makefile you've ever seen #
 
 OBJ_PATH=Output/Obj/
-MCU=atmega32u4
 DFU-P=dfu-programmer
 
 C_SOURCES:=$(wildcard *.c)
 O_SOURCES:=$(patsubst %.c, $(OBJ_PATH)%.o, $(C_SOURCES))
 
+AID_FORMAT:=$(patsubst %, -I%, $(AID))
+
 CC=avr-gcc
 
 DASH_F_ARGS=-funsigned-char -funsigned-bitfields -ffunction-sections -fdata-sections -fpack-struct -fshort-enums
-COMPILER_ARGS=-DDEBUG -O1 $(DASH_F_ARGS) -Wall -mmcu=atmega32u4 -std=gnu99
-
+COMPILER_ARGS=-DDEBUG -O1 $(DASH_F_ARGS) -Wall $(AID_FORMAT) -mmcu=atmega32u4 -std=gnu99
 
 LINKER_ARGS=-Wl,-Map="Output/$(PROJECT_NAME).map" -Wl,-u,vfprintf -Wl,--start-group -Wl,-lm  -Wl,--end-group -Wl,--gc-sections -mmcu=atmega32u4 -lprintf_flt
-
 
 flash: Output/output.hex
 	@echo flashing chip
@@ -49,7 +51,9 @@ output_folder:
 	mkdir -p Output/Obj
 	@echo
 
+print:
+	@echo $(AID_FORMAT)
+
 clean:
 	rm -r Output
 	
-
