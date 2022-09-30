@@ -339,11 +339,6 @@ I2CInstruction_ID I2CBufferAddInstruction(I2CBuffer_pT buf, int d_add, int rw, u
 		return 0;
 	}
 
-	if (buf->currentSize >= I2C_MAX_BUFFER_SIZE)
-	{
-		return 0;
-	}
-	
 	I2CInstruction_pT newInstr = I2CInstructionNew(d_add, rw, dat, leng);
 	if (newInstr == NULL)
 	{
