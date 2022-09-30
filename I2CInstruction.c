@@ -299,7 +299,12 @@ I2CInstruction_ID I2CBufferPushInstruction(I2CBuffer_pT buf, I2CInstruction_pT n
 	{
 		return 0;
 	}
-	
+
+	if (buf->currentSize >= I2C_MAX_BUFFER_SIZE)
+	{
+		return 0;
+	}
+
 	cli();
 	buf->currentSize++;
 	
@@ -330,6 +335,11 @@ I2CInstruction_ID I2CBufferPushInstruction(I2CBuffer_pT buf, I2CInstruction_pT n
 I2CInstruction_ID I2CBufferAddInstruction(I2CBuffer_pT buf, int d_add, int rw, uint8_t* dat, int leng)
 {
 	if (!buf)
+	{
+		return 0;
+	}
+
+	if (buf->currentSize >= I2C_MAX_BUFFER_SIZE)
 	{
 		return 0;
 	}
