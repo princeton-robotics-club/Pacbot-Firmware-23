@@ -37,6 +37,11 @@ flash: $(OUT_PATH)/$(PROJECT_NAME).hex
 	$(DFU-P) $(MCU) flash $<
 	@echo
 
+launch:
+	@echo launching program
+	$(DFU-P) $(MCU) launch --no-reset
+	@echo
+
 binfile: $(OUT_PATH)/$(PROJECT_NAME).bin
 hexfile: $(OUT_PATH)/$(PROJECT_NAME).hex
 
