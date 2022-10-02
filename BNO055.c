@@ -14,7 +14,7 @@
 
 #include "I2CInstruction.h"
 #include "I2CDriver.h"
-#include "Usart.h"
+// #include "Usart.h"
 #include "BNO055.h"
 
 I2CInstruction_ID bno055EnterNDOF(I2CBuffer_pT buf)

@@ -12,7 +12,7 @@
 // Custom includes
 #include "I2CDriver.h"
 #include "I2CInstruction.h"
-#include "Usart.h"
+// #include "Usart.h"
 
 //Forward declaration
 void I2CHandle(void);
