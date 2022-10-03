@@ -56,9 +56,6 @@ int main(void)
     {
 		I2CTask();
 		
-
-		USART_task();
-		
 		if (!I2CBufferContains(ibt, ipt1))
 		{
 			ipt1 = I2CBufferAddInstruction(ibt, 0x28, I2C_WRITE, getST_RESULT, 1);

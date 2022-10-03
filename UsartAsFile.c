@@ -117,8 +117,9 @@ int USART_task(void)
 		}
 		
 	}
-	return retval;
 	UCSR1B |= (1<<RXCIE1) | (1<<TXCIE1);
+	return retval;
+	
 }
 
 int USART_putChar(char c, FILE * stream)
@@ -134,9 +135,10 @@ int USART_putChar(char c, FILE * stream)
 		}
 
 		g_writeBufSize++;
+		USART_task();
 		return 0;
 	}
-	
+	USART_task();
 	return -1;
 }
 
