@@ -24,7 +24,7 @@ int main(void)
 	CLKPR = 0;
 	
 	I2CInit();
-	USART_init();
+	USART_init(115200);
 	
 	DDRC |= (1 << DDC6);
 	

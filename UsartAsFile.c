@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <avr/interrupt.h>
 #include <string.h>
+#include "UsartAsFile.h"
 
 #define MAX_USART_BUFFER_SIZE 256
 
@@ -32,10 +33,13 @@ size_t getReadBufSize()
 	return g_readBufSize;
 }
 
-void USART_init()
+/* Initializes the USART and USART Filestream */
+void USART_init(long baud)
 {
-	// Set the baud rate
-	UBRR1 = 8;
+	// Set UBRR1 for baud configuration
+	// This is based on formula recovered from atmega32u4 datasheet
+	// PG 191
+	UBRR1 = (F_CPU / (16 * baud)) - 0.5;
 	
 	// Enable interrupts on receiving and finishing a transmit
 	UCSR1B |= (1<<RXCIE1) | (1<<TXCIE1);	// We don't interrupt on empty buffer because we may not always have something we want to write.
@@ -43,8 +47,10 @@ void USART_init()
 	// Enable both the receiver and transmitter
 	UCSR1B |= (1<<RXEN1) | (1<<TXEN1);
 
+	// Initialize the filestream
 	usartStream_Ptr = fdevopen(USART_putChar, USART_getChar);
 }
+
 
 ISR(USART1_RX_vect)
 {
