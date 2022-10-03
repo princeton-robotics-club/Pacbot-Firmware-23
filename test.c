@@ -13,7 +13,6 @@
 
 #include "I2CInstruction.h"
 #include "I2CDriver.h"
-//#include "Usart.h"
 #include "UsartAsFile.h"
 #include "BNO055.h"
 
@@ -25,7 +24,6 @@ int main(void)
 	CLKPR = 0;
 	
 	I2CInit();
-    //usartInit();
 	USART_init();
 	
 	DDRC |= (1 << DDC6);
@@ -71,11 +69,6 @@ int main(void)
 		if (loop > 10000)
 		{
 			fusionRawToFormatted(fusionResult, fusionFormatted);
-			
-			// char out[100] = "";
-			// sprintf(out, "r: %d\n%f\n%f\n%f\n", *result, fusionFormatted[0], fusionFormatted[1], fusionFormatted[2]);
-			// addStringToUsartWriteBuffer(out);
-			// loop = 0;
 
 			fprintf(usartStream_Ptr, "r: %d\n%f\n%f\n%f\n", *result, fusionFormatted[0], fusionFormatted[1], fusionFormatted[2]);
 			loop = 0;
