@@ -33,7 +33,8 @@ size_t getReadBufSize()
     return g_readBufSize;
 }
 
-/* Initializes the USART and USART Filestream */
+/* Initializes the USART and USART Filestream
+ * Param: long baud = the baud rate to initialize the USART with */
 void USART_init(long baud)
 {
     // Set UBRR1 for baud configuration
