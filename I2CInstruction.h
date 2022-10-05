@@ -13,8 +13,8 @@
 
 #define I2C_MAX_BUFFER_SIZE     64
 
-#define I2C_WRITE	0
-#define I2C_READ	1
+#define I2C_WRITE   0
+#define I2C_READ    1
 
 /* I2CInstruction_ID is the memory safe way to identify I2CInstructions */
 typedef uint32_t I2CInstruction_ID;

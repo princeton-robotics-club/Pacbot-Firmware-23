@@ -83,8 +83,8 @@ static uint8_t g_state = 0;
 // Global variables it is :(
 static I2CBuffer_pT g_curBuf = NULL;
 
-/*	Must be called to set the buffer for the I2C driver to take instructions from
- *	Param: struct I2CInstruction * buf is a pointer to the the buffer you want to use */
+/*    Must be called to set the buffer for the I2C driver to take instructions from
+ *    Param: struct I2CInstruction * buf is a pointer to the the buffer you want to use */
 void I2CSetCurBuf(I2CBuffer_pT buf)
 {
     g_curBuf = buf;
@@ -92,7 +92,7 @@ void I2CSetCurBuf(I2CBuffer_pT buf)
 
 // This handles I2C using info from the I2C-Instructions
 void I2CHandle()
-{	
+{    
     static int dataPtr = 0; // Holds how many bytes have been written/read
 
     if (!g_curBuf)
@@ -112,22 +112,22 @@ void I2CHandle()
         // Start or repeated start
         case START_TRA:
         case REP_START_TRA:
-            loadAdress(I2CBufferGetCurrentInstructionAddress(g_curBuf), I2CBufferGetCurrentInstructionReadWrite(g_curBuf));	// Load the device address and r/w
+            loadAdress(I2CBufferGetCurrentInstructionAddress(g_curBuf), I2CBufferGetCurrentInstructionReadWrite(g_curBuf));    // Load the device address and r/w
             break;
             
         // Slave address + write has been transmitted and ACK received
         case SLA_W_TRA_ACK_REC:
             loadTWDR(I2CBufferGetCurrentInstructionData(g_curBuf, 0));  // Load the first byte to write into TWDR
-            dataPtr = 1;											    // Update  dataPtr
+            dataPtr = 1;                                                // Update  dataPtr
             break;
             
         // Slave address + write has been transmitted and NACK received
         case SLA_W_TRA_NACK_REC:
             // Could put an error message here
-            sendStopCond();						        // Send a stop condition
-            I2CBufferMoveToNextInstruction(g_curBuf);	// Move to the next instruction (could comment out)
+            sendStopCond();                                // Send a stop condition
+            I2CBufferMoveToNextInstruction(g_curBuf);    // Move to the next instruction (could comment out)
             dataPtr = 0;
-            g_state = 0;						        // set g_state to 0 (I2C ready/off)
+            g_state = 0;                                // set g_state to 0 (I2C ready/off)
             return;
         
         // A data byte has been transmitted and an ACK received
@@ -135,32 +135,32 @@ void I2CHandle()
             // If all of the bytes have been transmitted
             if(dataPtr == I2CBufferGetCurrentInstructionLength(g_curBuf))
             {
-                sendStopCond();					            // Send a stop condition
-                I2CBufferMoveToNextInstruction(g_curBuf);	// Move to the next instruction (could comment out)
-                g_state = 0;					            // set g_state to 0 (I2C ready/off)
-                dataPtr = 0;					            // Reset the dataPtr var
+                sendStopCond();                                // Send a stop condition
+                I2CBufferMoveToNextInstruction(g_curBuf);    // Move to the next instruction (could comment out)
+                g_state = 0;                                // set g_state to 0 (I2C ready/off)
+                dataPtr = 0;                                // Reset the dataPtr var
                 return;
             }
             // Otherwise
             else
-            {	
-                loadTWDR(I2CBufferGetCurrentInstructionData(g_curBuf,dataPtr));	// Load the next byte to write into TWDR
-                dataPtr++;								                        // Increment the dataPtr
+            {    
+                loadTWDR(I2CBufferGetCurrentInstructionData(g_curBuf,dataPtr));    // Load the next byte to write into TWDR
+                dataPtr++;                                                        // Increment the dataPtr
             }
             break;
             
         // A data byte has been transmitted and a NACK received
         case DATA_TRA_NACK_REC:
-            sendStopCond();					                    // Send a stop condition
+            sendStopCond();                                        // Send a stop condition
             if (dataPtr == I2CBufferGetCurrentInstructionLength(g_curBuf))
             {
-                I2CBufferMoveToNextInstruction(g_curBuf);		// Move to the next instruction (could comment out)
+                I2CBufferMoveToNextInstruction(g_curBuf);        // Move to the next instruction (could comment out)
             }
             else
             {
                 I2CBufferMoveToNextInstruction(g_curBuf);
             }
-            g_state = 0;					                    // set g_state to 0 (I2C ready/off)
+            g_state = 0;                                        // set g_state to 0 (I2C ready/off)
             dataPtr = 0;
             return;
             
@@ -169,54 +169,54 @@ void I2CHandle()
             // If only 1 byte is going to be read
             if(dataPtr == I2CBufferGetCurrentInstructionLength(g_curBuf) - 1)
             {
-                disableAck();				// Disable the ACK
+                disableAck();                // Disable the ACK
             }
             // Otherwise
             else
             {
-                enableACK();				// Enable the ACk
+                enableACK();                // Enable the ACk
             }
             break;
         
         // Slave address + read transmitted and a NACK received
         case SLA_R_TRA_NACK_REC:
-            sendStopCond();				                // Send a stop condition
+            sendStopCond();                                // Send a stop condition
             I2CBufferMoveToNextInstruction(g_curBuf);   // Push instruction to back and move to the next instruction (could comment out)
             dataPtr = 0;
-            g_state = 0;					            // set g_state to 0 (I2C ready/off)
+            g_state = 0;                                // set g_state to 0 (I2C ready/off)
             return;
             
         // Data received and ACK transmitted
         case DATA_REC_ACK_TRA:
-            I2CBufferSetCurrentInstructionData(g_curBuf, dataPtr, TWDR);		// Read in the byte
-            dataPtr++;							// Increment dataPtr
+            I2CBufferSetCurrentInstructionData(g_curBuf, dataPtr, TWDR);        // Read in the byte
+            dataPtr++;                            // Increment dataPtr
             // If we've read as much as we want
             if(dataPtr == I2CBufferGetCurrentInstructionLength(g_curBuf) - 1)
             {
-                disableAck();					// Disable the ACK
+                disableAck();                    // Disable the ACK
             }
-            else								// Otherwise
+            else                                // Otherwise
             {
-                enableACK();					// Enable the ACK
+                enableACK();                    // Enable the ACK
             }
             break;
         
         // Data received and NACK transmitted
         case DATA_REC_NACK_TRA:
-            I2CBufferSetCurrentInstructionData(g_curBuf, dataPtr, TWDR);	// Read in the byte
-            dataPtr = 0;					// Reset the dataPtr var
-            sendStopCond();					// Send a stop condition
-            I2CBufferMoveToNextInstruction(g_curBuf);		// Move to the next instruction (could comment out)
+            I2CBufferSetCurrentInstructionData(g_curBuf, dataPtr, TWDR);    // Read in the byte
+            dataPtr = 0;                    // Reset the dataPtr var
+            sendStopCond();                    // Send a stop condition
+            I2CBufferMoveToNextInstruction(g_curBuf);        // Move to the next instruction (could comment out)
             dataPtr = 0;
-            g_state = 0;					// set g_state to 0 (I2C ready/off)
+            g_state = 0;                    // set g_state to 0 (I2C ready/off)
             return;
             
         // If one of the other statuses pops up
         default:
-            sendStopCond();							// Send a stop condition
-            I2CBufferMoveToNextInstruction(g_curBuf);			// Push instruction to back and move to the next instruction (could comment out)
+            sendStopCond();                            // Send a stop condition
+            I2CBufferMoveToNextInstruction(g_curBuf);            // Push instruction to back and move to the next instruction (could comment out)
             dataPtr = 0;
-            g_state = 0;							// set g_state to 0 (I2C ready/off)
+            g_state = 0;                            // set g_state to 0 (I2C ready/off)
             return;
     }
     // If we haven't returned, then make sure g_state is 1
@@ -237,7 +237,7 @@ void I2CTask()
             sendStartCond();
             g_state = 1;
         }
-    }	
+    }    
 }
 
 #ifndef F_CPU
@@ -247,7 +247,7 @@ void I2CTask()
 /* Called to initialize the I2C to a certain frequency
  * Param: long sclFreq is the intended frequency for the I2C peripheral to run at */
 void I2CInit(long sclFreq)
-{	
+{    
     /*
     
     Calculation stems from the following equation:

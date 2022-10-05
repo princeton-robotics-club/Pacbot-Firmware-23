@@ -10,7 +10,7 @@
 #define BNO055_H_
 
 // Change to 0x29 if using 0x29 as the address
-#define BNO055_I2C_ADDR						(0x28)
+#define BNO055_I2C_ADDR                     (0x28)
 
 
 /* Function prototypes */

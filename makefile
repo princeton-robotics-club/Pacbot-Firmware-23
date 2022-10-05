@@ -37,6 +37,11 @@ flash: $(OUT_PATH)/$(PROJECT_NAME).hex
 	$(DFU-P) $(MCU) flash $<
 	@echo
 
+erase:
+	@echo erasing flash on chip
+	$(DFU-P) $(MCU) erase
+	@echo
+
 launch:
 	@echo launching program
 	$(DFU-P) $(MCU) launch --no-reset
