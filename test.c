@@ -66,11 +66,12 @@ int main(void)
         loop++;
         
         
-        if (loop > 10000)
+        if (loop > 30000)
         {
             fusionRawToFormatted(fusionResult, fusionFormatted);
 
-            fprintf(usartStream_Ptr, "r: %d\n%f\n%f\n%f\n", *result, fusionFormatted[0], fusionFormatted[1], fusionFormatted[2]);
+            //fprintf(usartStream_Ptr, "r: %d\n%f\n%f\n%f\nSize: %d", *result, fusionFormatted[0], fusionFormatted[1], fusionFormatted[2], getWriteBufSize());
+            I2CBufferPrint(ibt, usartStream_Ptr);
             loop = 0;
         }
     }

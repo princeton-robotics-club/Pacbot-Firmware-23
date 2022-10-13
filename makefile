@@ -31,6 +31,8 @@ LINKER_ARGS=-Wl,-Map="Output/$(PROJECT_NAME).map" -Wl,-u,vfprintf -Wl,--start-gr
 # Edit above
 # Don't edit below
 
+.Phony: flash
+
 flash: $(OUT_PATH)/$(PROJECT_NAME).hex
 	@echo flashing chip
 	$(DFU-P) $(MCU) erase
@@ -47,8 +49,11 @@ launch:
 	$(DFU-P) $(MCU) launch --no-reset
 	@echo
 
+noflash: hexfile
+
 binfile: $(OUT_PATH)/$(PROJECT_NAME).bin
 hexfile: $(OUT_PATH)/$(PROJECT_NAME).hex
+elffile: $(OUT_PATH)/$(PROJECT_NAME).elf
 
 $(OUT_PATH)/$(PROJECT_NAME).bin: $(OUT_PATH)/$(PROJECT_NAME).elf
 	@echo Copying Elf to Bin

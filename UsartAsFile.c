@@ -4,7 +4,7 @@
 #include <string.h>
 #include "UsartAsFile.h"
 
-#define MAX_USART_BUFFER_SIZE 256
+#define MAX_USART_BUFFER_SIZE 1024
 
 int USART_putChar(char c, FILE * stream);
 int USART_getChar(FILE * stream);
@@ -40,8 +40,10 @@ void USART_init(long baud)
     // Set UBRR1 for baud configuration
     // This is based on formula recovered from atmega32u4 datasheet
     // PG 191
-    UBRR1 = (F_CPU / (16 * baud)) - 0.5;
-    
+    //UBRR1 = (F_CPU / (16 * baud)) - 0.5;
+
+    UBRR1 = 8;
+
     // Enable interrupts on receiving and finishing a transmit
     UCSR1B |= (1<<RXCIE1) | (1<<TXCIE1);    // We don't interrupt on empty buffer because we may not always have something we want to write.
     
@@ -131,6 +133,7 @@ int USART_task(void)
 
 int USART_putChar(char c, FILE * stream)
 {
+    UCSR1B &= ~(1<<RXCIE1) & ~(1<<TXCIE1);
     if (g_writeBufSize < g_maxSize)
     {
         *g_write_w_Ptr = c;
@@ -145,6 +148,7 @@ int USART_putChar(char c, FILE * stream)
         USART_task();
         return 0;
     }
+    // USART_task reenables the interrupts
     USART_task();
     return -1;
 }
