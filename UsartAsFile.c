@@ -91,6 +91,8 @@ ISR(USART1_TX_vect)
 
 int USART_getChar(FILE * stream)
 {
+    UCSR1B &= ~(1<<RXCIE1) & ~(1<<TXCIE1);
+
     int retval = -1;
     if (g_readBufSize)
     {
@@ -103,6 +105,9 @@ int USART_getChar(FILE * stream)
             g_read_r_Ptr = g_receiveBuffer;
         }
     }
+
+    UCSR1B |= (1<<RXCIE1) | (1<<TXCIE1);
+
     return retval;
 }
 
