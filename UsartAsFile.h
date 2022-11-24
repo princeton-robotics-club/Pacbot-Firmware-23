@@ -21,4 +21,4 @@ size_t getWriteBufSize();
 size_t getReadBufSize();
 
 /* Used for USART output with stdio functions */
-FILE * usartStream_Ptr;
+extern FILE * usartStream_Ptr;

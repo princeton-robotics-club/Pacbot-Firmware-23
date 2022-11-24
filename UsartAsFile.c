@@ -6,12 +6,12 @@
 
 #define MAX_USART_BUFFER_SIZE 1024
 
-int USART_putChar(char c, FILE * stream);
-int USART_getChar(FILE * stream);
+static int USART_putChar(char c, FILE * stream);
+static int USART_getChar(FILE * stream);
 
 FILE * usartStream_Ptr;
 
-const int g_maxSize = MAX_USART_BUFFER_SIZE;
+static const int g_maxSize = MAX_USART_BUFFER_SIZE;
 
 static volatile char g_receiveBuffer[MAX_USART_BUFFER_SIZE] = {0};
 static volatile char * g_read_r_Ptr = g_receiveBuffer;
@@ -40,9 +40,9 @@ void USART_init(long baud)
     // Set UBRR1 for baud configuration
     // This is based on formula recovered from atmega32u4 datasheet
     // PG 191
-    //UBRR1 = (F_CPU / (16 * baud)) - 0.5;
+    UBRR1 = (F_CPU / (16.0 * baud)) - 0.5;
 
-    UBRR1 = 8;
+    // UBRR1 = 8;
 
     // Enable interrupts on receiving and finishing a transmit
     UCSR1B |= (1<<RXCIE1) | (1<<TXCIE1);    // We don't interrupt on empty buffer because we may not always have something we want to write.
@@ -89,7 +89,7 @@ ISR(USART1_TX_vect)
     }
 }
 
-int USART_getChar(FILE * stream)
+static int USART_getChar(FILE * stream)
 {
     UCSR1B &= ~(1<<RXCIE1) & ~(1<<TXCIE1);
 
@@ -136,7 +136,7 @@ int USART_task(void)
     
 }
 
-int USART_putChar(char c, FILE * stream)
+static int USART_putChar(char c, FILE * stream)
 {
     UCSR1B &= ~(1<<RXCIE1) & ~(1<<TXCIE1);
     if (g_writeBufSize < g_maxSize)

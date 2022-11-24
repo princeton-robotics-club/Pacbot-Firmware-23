@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <util/delay.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "I2CInstruction.h"
 #include "I2CDriver.h"
@@ -22,7 +23,7 @@ int main(void)
     MCUCR |= (1<<JTD);
     CLKPR = (1 << CLKPCE);
     CLKPR = 0;
-    
+
     I2CInit();
     USART_init(115200);
     
@@ -42,8 +43,7 @@ int main(void)
     uint8_t * result = calloc(1, sizeof(uint8_t));
     I2CInstruction_ID ipt1 = I2CBufferAddInstruction(ibt, 0x28, I2C_WRITE, getST_RESULT, 1);
     I2CBufferAddInstruction(ibt, 0x28, I2C_READ, result, 1);
-    
-    
+
     uint8_t fusionResult[6] = {0};
     double fusionFormatted[3] = {0};
     I2CInstruction_ID ipt2 = bno055GetAllEuler(ibt, &fusionResult[0]);
@@ -66,12 +66,22 @@ int main(void)
         loop++;
         
         
-        if (loop > 30000)
+        if (loop > 8000)
         {
             fusionRawToFormatted(fusionResult, fusionFormatted);
 
-            //fprintf(usartStream_Ptr, "r: %d\n%f\n%f\n%f\nSize: %d", *result, fusionFormatted[0], fusionFormatted[1], fusionFormatted[2], getWriteBufSize());
-            I2CBufferPrint(ibt, usartStream_Ptr);
+            fprintf(usartStream_Ptr, "r: %d\n%f\n%f\n%f\nSize: %d\n", *result, fusionFormatted[0], fusionFormatted[1], fusionFormatted[2], getWriteBufSize());
+
+            int readBufSize = getReadBufSize();
+            if (readBufSize)
+            {
+                char * read = malloc(readBufSize+1);
+                fgets(read, readBufSize+1, usartStream_Ptr);                
+                fprintf(usartStream_Ptr, read);
+                free(read);
+            }
+            
+            // I2CBufferPrint(ibt, usartStream_Ptr);
             loop = 0;
         }
     }

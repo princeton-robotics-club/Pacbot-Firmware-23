@@ -83,6 +83,7 @@ output_folder:
 	mkdir -p $(OBJ_PATH)
 	@echo
 
+
 print:
 	@echo $(AID_FORMAT)
 
