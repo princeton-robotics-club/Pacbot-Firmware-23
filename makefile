@@ -25,14 +25,18 @@ DEBUG=-DDEBUG
 CC=avr-gcc
 
 DASH_F_ARGS=-funsigned-char -funsigned-bitfields -ffunction-sections -fdata-sections -fpack-struct -fshort-enums
-COMPILER_ARGS=$(DEBUG) -O3 -MD $(DASH_F_ARGS) -Wall $(AID_FORMAT) -mmcu=atmega32u4 -std=gnu99
+COMPILER_ARGS=$(DEBUG) -Os -MD $(DASH_F_ARGS) -g2 -Wall $(AID_FORMAT) -mmcu=atmega32u4 -std=gnu99
 
 LINKER_ARGS=-Wl,-Map="Output/$(PROJECT_NAME).map" -Wl,-u,vfprintf -Wl,--start-group -Wl,-lm  -Wl,--end-group -Wl,--gc-sections -mmcu=atmega32u4 -lprintf_flt
 
 # Edit above
 # Don't edit below
 
-.Phony: flash
+.Phony: all
+
+all: dissassembly flash
+
+dissassembly: $(OUT_PATH)/$(PROJECT_NAME).lss
 
 flash: $(OUT_PATH)/$(PROJECT_NAME).hex
 	@echo flashing chip
@@ -55,6 +59,11 @@ noflash: hexfile
 binfile: $(OUT_PATH)/$(PROJECT_NAME).bin
 hexfile: $(OUT_PATH)/$(PROJECT_NAME).hex
 elffile: $(OUT_PATH)/$(PROJECT_NAME).elf
+
+$(OUT_PATH)/$(PROJECT_NAME).lss: $(OUT_PATH)/$(PROJECT_NAME).elf
+	@echo Creating Dissassembly file
+	avr-objdump -h -S $< > $@
+	@echo
 
 $(OUT_PATH)/$(PROJECT_NAME).bin: $(OUT_PATH)/$(PROJECT_NAME).elf
 	@echo Copying Elf to Bin
