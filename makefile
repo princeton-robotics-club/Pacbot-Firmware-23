@@ -1,6 +1,6 @@
 # The worst makefile ever produced but should work with any similarly structured AVR projects
 
-PROJECT_NAME=BNO055SimpleLib
+PROJECT_NAME=PacbotLowLevelCode
 MCU=atmega32u4
 
 # add any additional include directories (AIDs).
