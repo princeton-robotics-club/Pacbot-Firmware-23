@@ -15,15 +15,41 @@
 
 /* Function prototypes */
 
-I2CInstruction_ID bno055WriteReg(I2CBuffer_pT buf, uint8_t toWrite, uint8_t reg);
-I2CInstruction_ID bno055ReadReg(I2CBuffer_pT buf, uint8_t * out, uint8_t reg);
-I2CInstruction_ID bno055MultiRegRead(I2CBuffer_pT buf, uint8_t * out, uint8_t firstReg, size_t numOfRegsToRead);
+/* Sends the instructions to the IMU to write reg with data toWrite 
+ * Returns an I2CInstruction ID for the final instruction sent */
+I2CInstruction_ID bno055WriteReg(uint8_t toWrite, uint8_t reg);
 
-I2CInstruction_ID bno055EnterNDOF(I2CBuffer_pT buf);
-I2CInstruction_ID bno055GetPitch(I2CBuffer_pT buf, uint8_t * out);
-I2CInstruction_ID bno055GetRoll(I2CBuffer_pT buf, uint8_t * out);
-I2CInstruction_ID bno055GetHeading(I2CBuffer_pT buf, uint8_t * out);
-I2CInstruction_ID bno055GetAllEuler(I2CBuffer_pT buf, uint8_t * out);
+/* Sends the instructions to the IMU to read reg into out 
+ * Returns an I2CInstruction ID for the final instruction sent */
+I2CInstruction_ID bno055ReadReg(uint8_t * out, uint8_t reg);
+
+/* Sends instructions to the IMU to read numOfRegsToRead from firstReg to
+ * out. Returns an I2CInstruction ID for the final instruction sent */
+I2CInstruction_ID bno055MultiRegRead(uint8_t * out,
+                                     uint8_t firstReg,
+                                     size_t numOfRegsToRead);
+
+/* Sends the instructions to the IMU to enter NDOF fusion mode
+ * Returns an I2CInstruction ID for the final instruction sent */
+I2CInstruction_ID bno055EnterNDOF();
+
+/* Sends the instructions to the IMU to read the current pitch
+ * Returns an I2CInstruction ID for the final instruction sent */
+I2CInstruction_ID bno055GetPitch(uint8_t * out);
+
+/* Sends the instructions to the IMU to read the current roll
+ * Returns an I2CInstruction ID for the final instruction sent */
+I2CInstruction_ID bno055GetRoll(uint8_t * out);
+
+/* Sends the instructions to the IMU to read the current heading
+ * Returns an I2CInstruction ID for the final instruction sent */
+I2CInstruction_ID bno055GetHeading(uint8_t * out);
+
+/* Sends the instructions to the IMU to read all orientations
+ * Returns an I2CInstruction ID for the final instruction sent */
+I2CInstruction_ID bno055GetAllEuler(uint8_t * out);
+
+/* Converts an euler angle uint8_t pair into a float */
 void fusionRawToFormatted(uint8_t  * raw, double * formatted);
 
 

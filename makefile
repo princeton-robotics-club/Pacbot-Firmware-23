@@ -21,10 +21,11 @@ AID_FORMAT:=$(patsubst %, -I%, $(AID))
 # Don't edit above
 # Edit below
 
+DEBUG=-DDEBUG
 CC=avr-gcc
 
 DASH_F_ARGS=-funsigned-char -funsigned-bitfields -ffunction-sections -fdata-sections -fpack-struct -fshort-enums
-COMPILER_ARGS=-DDEBUG -O1 $(DASH_F_ARGS) -Wall $(AID_FORMAT) -mmcu=atmega32u4 -std=gnu99
+COMPILER_ARGS=$(DEBUG) -O3 -MD $(DASH_F_ARGS) -Wall $(AID_FORMAT) -mmcu=atmega32u4 -std=gnu99
 
 LINKER_ARGS=-Wl,-Map="Output/$(PROJECT_NAME).map" -Wl,-u,vfprintf -Wl,--start-group -Wl,-lm  -Wl,--end-group -Wl,--gc-sections -mmcu=atmega32u4 -lprintf_flt
 
@@ -73,7 +74,7 @@ $(OUT_PATH)/$(PROJECT_NAME).elf: $(O_SOURCES)
 # Include directories are provided by avr-gcc assuming they are in the default WinAVR location
 $(OBJ_PATH)%.o: %.c | output_folder
 	@echo Compiling $< into $@
-	$(CC) -c $(COMPILER_ARGS) -o $@ $<
+	$(CC) $(COMPILER_ARGS) -o $@ -c $<
 	@echo 
 
 # Generates the output folders if need be
@@ -90,3 +91,4 @@ print:
 clean:
 	rm -r $(OUT_PATH)
 	
+-include $(O_SOURCES:.o=.d)
