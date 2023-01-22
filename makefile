@@ -34,7 +34,11 @@ LINKER_ARGS=-Wl,-Map="Output/$(PROJECT_NAME).map" -Wl,-u,vfprintf -Wl,--start-gr
 
 .Phony: all
 
-all: dissassembly flash
+all: dissassembly size flash
+
+size: $(OUT_PATH)/$(PROJECT_NAME).elf
+	avr-size $(OUT_PATH)/$(PROJECT_NAME).elf
+	@echo
 
 dissassembly: $(OUT_PATH)/$(PROJECT_NAME).lss
 
