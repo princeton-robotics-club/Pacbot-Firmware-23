@@ -12,6 +12,7 @@
 #include "BNO055.h"
 #include "ShiftReg.h"
 #include "VL6180x.h"
+#include "Encoder.h"
 
 #include <avr/io.h>
 #include <stdlib.h>
@@ -23,6 +24,8 @@
 // Here is where we currently store sensor data
 static uint8_t g_s_fusionResult[6] = {0};
 static double g_s_fusionFormatted[3] = {0};
+
+static double g_s_encoderResult[NUM_ENCODERS] = {0};
 
 static uint8_t g_s_distResult[8] = {0};
 
@@ -39,6 +42,12 @@ ISR(TIMER0_OVF_vect)
     if (!(g_millis % 10))
     {
         bno055GetAllEuler(&g_s_fusionResult[0]);
+    }
+
+    // Ask for Encoder data every 5 milliseconds (offset by 2)
+    if (!((g_millis-2) % 5))
+    {
+        getEncoderDistances(g_s_encoderResult);
     }
 
     // Ask for Distance data on every 10 milliseconds (offset by 5)
@@ -78,6 +87,7 @@ int main(void)
     // Various initializations
     I2CInit(200000);
     usartInit(115200);
+    encoderInit();
    
     bno055EnterNDOF();
 
@@ -94,8 +104,10 @@ int main(void)
         fusionRawToFormatted(g_s_fusionResult, g_s_fusionFormatted);
 
         // Print the sensor data
-        fprintf(usartStream_Ptr, "%lf, %d, %d, %d, %d, %d, %d, %d, %d\n",
+        fprintf(usartStream_Ptr, "%lf; %lf, %lf; %d, %d, %d, %d, %d, %d, %d, %d\n",
             *g_s_fusionFormatted,
+            g_s_encoderResult[0],
+            g_s_encoderResult[1],
             g_s_distResult[0],
             g_s_distResult[1],
             g_s_distResult[2],
