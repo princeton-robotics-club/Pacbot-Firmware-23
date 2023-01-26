@@ -129,6 +129,7 @@ I2CInstruction_ID I2CBufferMoveToNextInstruction()
         // Decrement size + free data var if last instr was a write
         ibt->currentSize--;
         I2CInstructionFreeData(&ibt->buf[ibt->currPt]);
+        ibt->buf[ibt->currPt].instrID = 0;
 
         // If the buffer is now empty, set the currpt and endpt to -1
         if (ibt->endPt == ibt->currPt)
@@ -254,72 +255,69 @@ I2CInstruction_ID I2CBufferAddInstruction(int d_add, int rw, uint8_t* dat, int l
 {
     static I2CInstruction_ID g_s_instrIDAssigner = 1;
 
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+    cli();
 
-        // Can't add an instruction if there is no room
-        if(ibt->currentSize >= g_s_I2CMaxBufSize)
-        {
-            return 0;
-        }
+    // Can't add an instruction if there is no room
+    if(ibt->currentSize >= g_s_I2CMaxBufSize)
+    {
+        return 0;
+    }
 
-        // Increment the buffer's size
-        ibt->currentSize++;
+    // Increment the buffer's size
+    ibt->currentSize++;
 
-        // If there was no instructions previously, set endPt to 0
-        if (ibt->endPt < 0)
+    // If there was no instructions previously, set endPt to 0
+    if (ibt->endPt < 0)
+    {
+        ibt->endPt = 0;
+    }
+    else // Increment endPt
+    {
+        ibt->endPt++;
+        if (ibt->endPt >= g_s_I2CMaxBufSize)
         {
             ibt->endPt = 0;
         }
-        else // Increment endPt
-        {
-            ibt->endPt++;
-            if (ibt->endPt >= g_s_I2CMaxBufSize)
-            {
-                ibt->endPt = 0;
-            }
-        }
+    }
         
-        // Fill in the newInstr's information
-        I2CInstruction_pT newInstr = &ibt->buf[ibt->endPt];
-        newInstr->dev_addr = d_add;
-        newInstr->length = leng;
-        newInstr->readWrite = rw;
+    // Fill in the newInstr's information
+    I2CInstruction_pT newInstr = &ibt->buf[ibt->endPt];
+    newInstr->dev_addr = d_add;
+    newInstr->length = leng;
+    newInstr->readWrite = rw;
 
-        // If it is a write, make a defensive copy (instruction owns the data)
-        if (rw == I2C_WRITE)
+    // If it is a write, make a defensive copy (instruction owns the data)
+    if (rw == I2C_WRITE)
+    {
+        newInstr->data = malloc(leng);
+        if (!newInstr->data)
         {
-            newInstr->data = malloc(leng);
-            if (!newInstr->data)
-            {
-                return 0;
-            }
-            memcpy(newInstr->data, dat, leng);
+            return 0;
         }
-        // If it is a read, then keep the passed pointer to add data to (program owns the data)
-        else
-        {
-            newInstr->data = dat;
-        }
-
-        // Assign an ID
-        newInstr->instrID = g_s_instrIDAssigner;
-        g_s_instrIDAssigner++;
-        if (!g_s_instrIDAssigner)
-        {
-            g_s_instrIDAssigner = 1;
-        }
-
-        // If there were no instruction previously, set currPt to endPt
-        if (ibt->currPt < 0)
-        {
-            ibt->currPt = ibt->endPt;
-        }
-        
-        return newInstr->instrID;
+        memcpy(newInstr->data, dat, leng);
+    }
+    // If it is a read, then keep the passed pointer to add data to (program owns the data)
+    else
+    {
+        newInstr->data = dat;
     }
 
-    // This line surpresses a completely useless GCC warning that I was sick of seeing
-    return 0;
+    // Assign an ID
+    newInstr->instrID = g_s_instrIDAssigner;
+    g_s_instrIDAssigner++;
+    if (!g_s_instrIDAssigner)
+    {
+        g_s_instrIDAssigner = 1;
+    }
+
+    // If there were no instruction previously, set currPt to endPt
+    if (ibt->currPt < 0)
+    {
+        ibt->currPt = ibt->endPt;
+    }
+        
+    return newInstr->instrID;
+
 }
 
 /* Returns the I2CBuffer's current size */
@@ -334,46 +332,28 @@ int I2CBufferContains(I2CInstruction_ID instr)
 {
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 #ifdef DEBUG
-        if (!instr)
-        {
-            return 0;
-        }
+            if (!instr)
+            {
+                return 0;
+            }
 #endif//Debug
-
-        
 
         // If there are no instructions then it doesn't have instr
         if (ibt->currPt < 0)
         {
-            
             return 0;
-        }
-
-        
+        } 
 
         // Loop through all of the instructions, and return 1 if instr is found
-        for (int i = ibt->currPt; i < g_s_I2CMaxBufSize; i++)
+        for (int i = 0; i < g_s_I2CMaxBufSize; i++)
         {
             if (instr == ibt->buf[i].instrID)
             {
-                
-                return 1;
-            }
-            if (i == ibt->endPt)
-            {
-                
-                return 0;
-            }
-            
-        }
-        for (int i = 0; i < ibt->endPt; i++)
-        {
-            if (instr == ibt->buf[i].instrID)
-            {
-                
+                sei();
                 return 1;
             }
         }
+        sei();
         return 0;
     }
     // This line surpresses a completely useless GCC warning that I was sick of seeing

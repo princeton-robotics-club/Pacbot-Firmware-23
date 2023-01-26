@@ -23,15 +23,13 @@
 #include <avr/interrupt.h>
 
 // Here is where we currently store sensor data
-static uint8_t g_s_fusionResult[6] = {0};
-static double g_s_fusionFormatted[3] = {0};
-
-static double g_s_encoderResult[NUM_ENCODERS] = {0};
-
-static uint8_t g_s_distResult[8] = {0};
+static uint8_t volatile g_s_fusionResult[6] = {0};
+static double volatile g_s_fusionFormatted[3] = {0};
+static double volatile g_s_encoderResult[NUM_ENCODERS] = {0};
+static uint8_t volatile g_s_distResult[8] = {0};
 
 // Milliseconds since initialization
-static unsigned long g_millis = 0;
+static unsigned long volatile g_millis = 0;
 
 // This handles our millisecond counter overflow
 ISR(TIMER0_OVF_vect)
