@@ -89,6 +89,10 @@ int main(void)
     I2CInit(200000);
     usartInit(115200);
     encoderInit();
+    motorsInit();
+
+    setLeftMotorPower(2048);
+    setRightMotorPower(2048);
    
     bno055EnterNDOF();
 

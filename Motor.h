@@ -4,6 +4,9 @@
 // Two motors
 #define NUM_MOTORS 2
 
+// TOP value
+#define TOP 4095
+
 // Motor #1
 #define M1_DDR  DDRD
 #define M1_PORT PORTD
