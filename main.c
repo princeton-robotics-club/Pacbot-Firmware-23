@@ -13,6 +13,7 @@
 #include "ShiftReg.h"
 #include "VL6180x.h"
 #include "Encoder.h"
+#include "Motor.h"
 
 #include <avr/io.h>
 #include <stdlib.h>
@@ -88,6 +89,10 @@ int main(void)
     I2CInit(200000);
     usartInit(115200);
     encoderInit();
+    motorsInit();
+
+    setLeftMotorPower(2048);
+    setRightMotorPower(2048);
    
     bno055EnterNDOF();
 

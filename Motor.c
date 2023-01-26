@@ -26,8 +26,6 @@ resolution for the duty cycle, and a PWM frequency of roughly 16MHz / 4096
 #include <avr/interrupt.h>
 #include "Motor.h"
 
-#define TOP 4096
-
 // Triggers during comparison match for motor 1 (turns off motor 1)
 ISR(TIMER1_COMPB_vect) {
 
@@ -57,7 +55,7 @@ ISR(TIMER1_OVF_vect) {
 void setLeftMotorPower(int pwrSigned) {
 
     // Determines the direction
-    leftMotorDir = (pwrSigned > 0) ? DIR_FW : DIR_BW;
+    leftMotorDir = (pwrSigned >= 0) ? DIR_FW : DIR_BW;
 
     // Sets the constant pin to ground
     M1_PORT &= ~(1 << M1_CONST_PORT);
@@ -75,7 +73,7 @@ void setLeftMotorPower(int pwrSigned) {
 void setRightMotorPower(int pwrSigned) {
 
     // Determines the direction
-    rightMotorDir = (pwrSigned > 0) ? DIR_FW : DIR_BW;
+    rightMotorDir = (pwrSigned >= 0) ? DIR_FW : DIR_BW;
 
     // Sets the constant pin to ground
     M2_PORT &= ~(1 << M2_CONST_PORT);
@@ -128,4 +126,8 @@ void motorsInit() {
 
     // Ties timer events to interrupts on output compares B and C
     TIMSK1 |= (1 << OCIE1B) | (1 << OCIE1C) | (1 << TOIE1);
+
+    // Set the power of the motor
+    setLeftMotorPower(0);
+    setRightMotorPower(0);
 }
