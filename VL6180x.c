@@ -118,7 +118,7 @@ void VL6180xInitSensor(int devAddress)
     // Send all of the custom data
     for (int i = 0; i < NUM_PUBLIC_REGS; i++)
     {
-        while (!I2CBufferAddInstruction(devAddress, I2C_WRITE, VL6180XCustomInitData[i], 3))
+        while (!I2CBufferAddInstruction(devAddress, I2C_WRITE, (uint8_t*)VL6180XCustomInitData[i], 3))
         {
             I2CTask();
         }
@@ -128,7 +128,7 @@ void VL6180xInitSensor(int devAddress)
     for (int i = 0; i < NUM_PRIVATE_REGS; i++)
     {
         
-        while (!I2CBufferAddInstruction(devAddress, I2C_WRITE, &(VL6180XRequiredInitData[i][0]), 3))
+        while (!I2CBufferAddInstruction(devAddress, I2C_WRITE, (uint8_t*)VL6180XRequiredInitData[i], 3))
         {
             I2CTask();
         }

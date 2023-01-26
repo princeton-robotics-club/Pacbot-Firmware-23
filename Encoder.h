@@ -21,4 +21,4 @@ static int encPinsB[NUM_ENCODERS] = {PINB5, PINB1}; // ENC12, ENC22
 void encoderInit();
 
 // Gets the total ticks traveled for this particular encoder
-long getEncoderTicks(int encoderNum);
+void getEncoderDistances(double * encoderDistances);
