@@ -129,6 +129,8 @@ int main(void)
             fgets(read, readBufSize+1, usartStream_Ptr);                
             fprintf(usartStream_Ptr, read);
             free(read);
+            setRightMotorPower(-1024);
+            setLeftMotorPower(-1024);
         }
 
         // This runs some clks to give the prints time to send
