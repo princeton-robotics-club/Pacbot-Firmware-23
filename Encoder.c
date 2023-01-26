@@ -34,8 +34,8 @@ ISR(PCINT0_vect) {
 
     for (; i < NUM_ENCODERS; i++) {
         
-        encoders[i].newStateA = (PINB >> pinsA[i]) & 1;
-        encoders[i].newStateB = (PINB >> pinsB[i]) & 1;
+        encoders[i].newStateA = (PINB >> encPinsA[i]) & 1;
+        encoders[i].newStateB = (PINB >> encPinsB[i]) & 1;
 
         // If the new encoder pin B matches the old A, the motor is going clockwise
         if (encoders[i].newStateB == encoders[i].priorStateA) ++encoders[i].totalTicks;
@@ -73,19 +73,19 @@ void encoderInit() {
     for (; i < NUM_ENCODERS; i++) {
 
         // Enables both of the encoder pins as inputs
-        DDRB &= ~(1<<pinsA[i]) & ~(1<<pinsB[i]);
+        DDRB &= ~(1<<encPinsA[i]) & ~(1<<encPinsB[i]);
 
         // Enables pin change interrupts (p. 91)
         PCICR |= (1<<PCIE0);
 
         // Ties pin changes at all four pins to interrupts
-        PCMSK0 |= (1<<pinsA[i]) | (1<<pinsB[i]);
+        PCMSK0 |= (1<<encPinsA[i]) | (1<<encPinsB[i]);
 
         // Initializes the variables for this encoder
-        encoders[i].pinNumA = pinsA[i];
-        encoders[i].pinNumB = pinsB[i];
-        encoders[i].priorStateA = (PINB >> pinsA[i]) & 1;
-        encoders[i].priorStateB = (PINB >> pinsB[i]) & 1;
+        encoders[i].pinNumA = encPinsA[i];
+        encoders[i].pinNumB = encPinsB[i];
+        encoders[i].priorStateA = (PINB >> encPinsA[i]) & 1;
+        encoders[i].priorStateB = (PINB >> encPinsB[i]) & 1;
         encoders[i].newStateA = 0;
         encoders[i].newStateB = 0;
         encoders[i].totalTicks = 0;
