@@ -23,10 +23,10 @@
 #include <avr/interrupt.h>
 
 // Here is where we currently store sensor data
-static uint8_t volatile g_s_fusionResult[6] = {0};
-static double volatile g_s_fusionFormatted[3] = {0};
-static double volatile g_s_encoderResult[NUM_ENCODERS] = {0};
-static uint8_t volatile g_s_distResult[8] = {0};
+volatile uint8_t g_s_fusionResult[6] = {0};
+volatile double g_s_fusionFormatted[3] = {0};
+volatile double g_s_encoderResult[NUM_ENCODERS] = {0};
+volatile uint8_t g_s_distResult[8] = {0};
 
 // Milliseconds since initialization
 static unsigned long volatile g_millis = 0;
@@ -87,12 +87,10 @@ int main(void)
     I2CInit(200000);
     usartInit(115200);
     encoderInit();
-    motorsInit();
-
-    setLeftMotorPower(2048);
-    setRightMotorPower(2048);
    
     bno055EnterNDOF();
+
+    sei();
 
     srInit();
     VL6180xInit(0x50);

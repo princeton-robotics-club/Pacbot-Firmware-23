@@ -24,7 +24,7 @@ typedef struct Encoder
 } Encoder;
 
 // Initializes encoder objects to be used by other functions
-static Encoder encoders[NUM_ENCODERS];
+static volatile Encoder encoders[NUM_ENCODERS];
 
 // Called during every pin change interrupt (ISR = Interrupt Service Routine)
 ISR(PCINT0_vect) {

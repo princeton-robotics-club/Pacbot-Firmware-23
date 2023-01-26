@@ -50,7 +50,7 @@ inline void disableAck()
 
 // Load data into TWDR
 inline void loadTWDR(uint8_t data)
-{
+{    
     TWDR = data;
     TWCR = (1 << TWI_INT_FLAG) | (1 << TWI_ENABLE) | (1 << TWI_INT_EN);
 }
@@ -77,7 +77,7 @@ inline void loadAddressWrite(uint8_t address)
 }
 
 // This is high when the I2C bus is active and low when its not
-static uint8_t g_state = 0;
+static volatile uint8_t g_state = 0;
 
 
 // This handles I2C using info from the I2C-Instructions

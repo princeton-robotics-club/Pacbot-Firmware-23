@@ -24,14 +24,14 @@ typedef struct usartBuffer {
 
 
 /* The write (transmit) and receive buffers */
-static struct usartBuffer g_receiveBuf = {
+static volatile struct usartBuffer g_receiveBuf = {
     .buffer = {0},
     .r_ptr = g_receiveBuf.buffer,
     .w_ptr = g_receiveBuf.buffer,
     .size = 0
 };
 
-static struct usartBuffer g_writeBuf = {
+static volatile struct usartBuffer g_writeBuf = {
     .buffer = {0},
     .r_ptr = g_writeBuf.buffer,
     .w_ptr = g_writeBuf.buffer,

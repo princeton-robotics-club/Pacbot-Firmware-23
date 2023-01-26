@@ -40,7 +40,7 @@ typedef struct I2CBuffer
 
 
 // This is the actual instance of the I2CBuffer
-static struct I2CBuffer buffer = {
+static volatile struct I2CBuffer buffer = {
     .buf = {{0}},
     .endPt = -1,
     .currPt = -1,
@@ -211,6 +211,7 @@ void I2CBufferSetCurrentInstructionData(int offset, int ddata)
             fprintf(usartStream_Ptr, "I2CBufferSetCurrentInstructionData set out of bounds data");
         }
     #endif//Debug
+    
         *(ibt->buf[ibt->currPt].data + offset) = ddata;
     }
 }
@@ -255,7 +256,7 @@ I2CInstruction_ID I2CBufferAddInstruction(int d_add, int rw, uint8_t* dat, int l
 {
     static I2CInstruction_ID g_s_instrIDAssigner = 1;
 
-    cli();
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 
     // Can't add an instruction if there is no room
     if(ibt->currentSize >= g_s_I2CMaxBufSize)
@@ -317,6 +318,7 @@ I2CInstruction_ID I2CBufferAddInstruction(int d_add, int rw, uint8_t* dat, int l
     }
         
     return newInstr->instrID;
+    }
 
 }
 
