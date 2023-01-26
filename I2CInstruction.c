@@ -6,6 +6,7 @@
  */ 
 
 // Other includes
+#include <util/atomic.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdlib.h>
@@ -48,10 +49,10 @@ static struct I2CBuffer buffer = {
 const I2CBuffer_pT ibt = &buffer;
 
 /* If Instruction is a write then it owns its data pointer.
- * This function frees it from ipt 
- * Clears but does not reset global interrupt enable bit */
+ * This function frees it from ipt */
 void I2CInstructionFreeData(I2CInstruction_pT ipt)
 {
+ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 #ifdef DEBUG
     if (!ipt)
     {
@@ -64,17 +65,18 @@ void I2CInstructionFreeData(I2CInstruction_pT ipt)
     {
         if (ipt->data)
         {
-            cli();
+            
             free(ipt->data);
         }
     }
 }
+}
 
 /* Prints ipt in a human readable form to ostream 
- * Returns -1 if fails, 0 if succeeds
- * Sets global interrupt enable */
+ * Returns -1 if fails, 0 if succeeds */
 int I2CInstructionPrint(I2CInstruction_pT ipt, FILE * ostream)
 {
+ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 #ifdef DEBUG
     if (!ipt)
     {
@@ -103,13 +105,14 @@ int I2CInstructionPrint(I2CInstruction_pT ipt, FILE * ostream)
     fputc('\n', ostream);
     return 0;
 }
+}
 
 /* Moves the I2CBuffer to the next instruction, deleting the current one 
- * Returns the new current instruction's id
- * Sets global interrupt enable */
+ * Returns the new current instruction's id */
 I2CInstruction_ID I2CBufferMoveToNextInstruction()
 {
-    cli();
+ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+    
     
     // Exit if there are no instructions in the buffer
     if (ibt->currPt < 0)
@@ -117,7 +120,7 @@ I2CInstruction_ID I2CBufferMoveToNextInstruction()
 #ifdef DEBUG
         fprintf(usartStream_Ptr, "I2CBufferMoveToNextInstruction called on empty buffer");
 #endif//Debug
-        sei();
+        
         return 0;
     }
     
@@ -141,15 +144,16 @@ I2CInstruction_ID I2CBufferMoveToNextInstruction()
     }
     
     
-    sei();
+    //
     return ibt->buf[ibt->currPt].instrID;
 
-    
+}
 }
 
 /* Returns the current instruction's device address */
 int I2CBufferGetCurrentInstructionAddress()
 {
+ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     if (ibt->currPt < 0)
     {
         return 0;
@@ -157,10 +161,12 @@ int I2CBufferGetCurrentInstructionAddress()
     
     return ibt->buf[ibt->currPt].dev_addr;
 }
+}
 
 /* Returns the current instruction's length */
 int I2CBufferGetCurrentInstructionLength()
 {
+ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     if (ibt->currPt < 0)
     {
         return 0;
@@ -168,10 +174,12 @@ int I2CBufferGetCurrentInstructionLength()
     
     return ibt->buf[ibt->currPt].length;
 }
+}
 
 /* Returns the current instruction's data offset by offset */
 uint8_t I2CBufferGetCurrentInstructionData(int offset)
 {
+ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     if (ibt->currPt < 0)
     {
         return 0;
@@ -183,10 +191,12 @@ uint8_t I2CBufferGetCurrentInstructionData(int offset)
     }
     return *(ibt->buf[ibt->currPt].data + offset);
 }
+}
 
 /* Sets the current instructions data at offset with ddata */
 void I2CBufferSetCurrentInstructionData(int offset, int ddata)
 {
+ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 #ifdef DEBUG
     if (offset > ibt->buf[ibt->currPt].length)
     {
@@ -195,10 +205,12 @@ void I2CBufferSetCurrentInstructionData(int offset, int ddata)
 #endif//Debug
     *(ibt->buf[ibt->currPt].data + offset) = ddata;
 }
+}
 
 /* Returns whether the current instruction is read or write */
 int I2CBufferGetCurrentInstructionReadWrite()
 {
+ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     if (ibt->currPt < 0)
     {
         return -1;
@@ -206,16 +218,19 @@ int I2CBufferGetCurrentInstructionReadWrite()
     
     return ibt->buf[ibt->currPt].readWrite;
 }
+}
 
 /* Returns the current instruction's id */
 I2CInstruction_ID I2CBufferGetCurrentInstructionID()
 {
+ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     if (ibt->currPt < 0)
     {
         return 0;
     }
     
     return ibt->buf[ibt->currPt].instrID;
+}
 }
 
 /* Adds a new instruction to the end of buf, where the new instruction has the following data
@@ -227,14 +242,15 @@ I2CInstruction_ID I2CBufferGetCurrentInstructionID()
  * Sets global interrupt enable */
 I2CInstruction_ID I2CBufferAddInstruction(int d_add, int rw, uint8_t* dat, int leng)
 {
+ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     static I2CInstruction_ID g_s_instrIDAssigner = 1;
 
-    cli();
+    
 
     // Can't add an instruction if there is no room
     if(ibt->currentSize >= g_s_I2CMaxBufSize)
     {
-        sei();
+        
         return 0;
     }
 
@@ -267,7 +283,7 @@ I2CInstruction_ID I2CBufferAddInstruction(int d_add, int rw, uint8_t* dat, int l
         newInstr->data = malloc(leng);
         if (!newInstr->data)
         {
-            sei();
+            
             return 0;
         }
         memcpy(newInstr->data, dat, leng);
@@ -291,21 +307,24 @@ I2CInstruction_ID I2CBufferAddInstruction(int d_add, int rw, uint8_t* dat, int l
     {
         ibt->currPt = ibt->endPt;
     }
-    sei();
+    
     return newInstr->instrID;
+}
 }
 
 /* Returns the I2CBuffer's current size */
 size_t I2CBufferGetCurrentSize()
 {
+ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     return ibt->currentSize;
+}
 }
 
 /* Returns 1 (true) if buf contains instr, or 0 (false) if buf does not
- * contain instr
- * Sets global interrupt enable */
+ * contain instr */
 int I2CBufferContains(I2CInstruction_ID instr)
 {
+ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 #ifdef DEBUG
     if (!instr)
     {
@@ -313,12 +332,12 @@ int I2CBufferContains(I2CInstruction_ID instr)
     }
 #endif//Debug
 
-    cli();
+    
 
     // If there are no instructions then it doesn't have instr
     if (ibt->currPt < 0)
     {
-        sei();
+        
         return 0;
     }
 
@@ -329,12 +348,12 @@ int I2CBufferContains(I2CInstruction_ID instr)
     {
         if (instr == ibt->buf[i].instrID)
         {
-            sei();
+            
             return 1;
         }
         if (i == ibt->endPt)
         {
-            sei();
+            
             return 0;
         }
         
@@ -343,19 +362,21 @@ int I2CBufferContains(I2CInstruction_ID instr)
     {
         if (instr == ibt->buf[i].instrID)
         {
-            sei();
+            
             return 1;
         }
     }
     
-    sei();
+    
     return 0;
+}
 }
 
 /* Prints out a human readable form of the I2C Buffer to ostream
  * Returns -1 if fails, 0 if succeeds */
 int I2CBufferPrint(FILE * ostream)
 {
+ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     uint8_t TWCRCpy = TWCR;
     TWCR &= ~(1<<TWI_INT_EN);
 
@@ -395,6 +416,7 @@ int I2CBufferPrint(FILE * ostream)
     TWCR = TWCRCpy;
 
     return 0;
+}
 }
 
 
