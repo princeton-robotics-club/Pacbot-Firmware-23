@@ -13,6 +13,7 @@
 #include "ShiftReg.h"
 #include "VL6180x.h"
 #include "Encoder.h"
+#include "Motor.h"
 
 #include <avr/io.h>
 #include <stdlib.h>
@@ -95,6 +96,9 @@ int main(void)
     VL6180xInit(0x50);
 
     millisInit();
+    motorsInit();
+    setRightMotorPower(1024);
+    setLeftMotorPower(1024);
 
     // Main loop
     while (1) 

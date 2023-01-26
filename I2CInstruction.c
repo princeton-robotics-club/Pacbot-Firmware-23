@@ -48,7 +48,8 @@ static struct I2CBuffer buffer = {
 const I2CBuffer_pT ibt = &buffer;
 
 /* If Instruction is a write then it owns its data pointer.
- * This function frees it from ipt */
+ * This function frees it from ipt 
+ * Clears but does not reset global interrupt enable bit */
 void I2CInstructionFreeData(I2CInstruction_pT ipt)
 {
 #ifdef DEBUG
@@ -65,7 +66,6 @@ void I2CInstructionFreeData(I2CInstruction_pT ipt)
         {
             cli();
             free(ipt->data);
-            sei();
         }
     }
 }
@@ -229,13 +229,14 @@ I2CInstruction_ID I2CBufferAddInstruction(int d_add, int rw, uint8_t* dat, int l
 {
     static I2CInstruction_ID g_s_instrIDAssigner = 1;
 
+    cli();
+
     // Can't add an instruction if there is no room
     if(ibt->currentSize >= g_s_I2CMaxBufSize)
     {
+        sei();
         return 0;
     }
-
-    cli();
 
     // Increment the buffer's size
     ibt->currentSize++;
@@ -266,6 +267,7 @@ I2CInstruction_ID I2CBufferAddInstruction(int d_add, int rw, uint8_t* dat, int l
         newInstr->data = malloc(leng);
         if (!newInstr->data)
         {
+            sei();
             return 0;
         }
         memcpy(newInstr->data, dat, leng);
@@ -311,13 +313,16 @@ int I2CBufferContains(I2CInstruction_ID instr)
     }
 #endif//Debug
 
+    cli();
+
     // If there are no instructions then it doesn't have instr
     if (ibt->currPt < 0)
     {
+        sei();
         return 0;
     }
 
-    cli();
+    
 
     // Loop through all of the instructions, and return 1 if instr is found
     for (int i = ibt->currPt; i < g_s_I2CMaxBufSize; i++)
