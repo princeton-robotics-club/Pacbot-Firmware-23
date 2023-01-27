@@ -78,7 +78,7 @@ inline void loadAddressWrite(uint8_t address)
 }
 
 // This is high when the I2C bus is active and low when its not
-static volatile uint8_t g_state = 0;
+static volatile uint8_t g_s_state = 0;
 
 
 // This handles I2C using info from the I2C-Instructions
@@ -114,7 +114,7 @@ void I2CHandle()
             sendStopCond();                     // Send a stop condition
             I2CBufferMoveToNextInstruction();   // Move to the next instruction
             dataPtr = 0;
-            g_state = 0;                        // set g_state to 0 (I2C ready/off)
+            g_s_state = 0;                        // set g_s_state to 0 (I2C ready/off)
             return;
         
         // A data byte has been transmitted and an ACK received
@@ -124,7 +124,7 @@ void I2CHandle()
             {
                 sendStopCond();                     // Send a stop condition
                 I2CBufferMoveToNextInstruction();   // Move to the next instruction
-                g_state = 0;                        // set g_state to 0 (I2C ready/off)
+                g_s_state = 0;                        // set g_s_state to 0 (I2C ready/off)
                 dataPtr = 0;                        // Reset the dataPtr var
                 return;
             }
@@ -147,7 +147,7 @@ void I2CHandle()
             {
                 I2CBufferMoveToNextInstruction();       // Move to the next instruction
             }
-            g_state = 0;                                // set g_state to 0 (I2C ready/off)
+            g_s_state = 0;                                // set g_s_state to 0 (I2C ready/off)
             dataPtr = 0;
             return;
             
@@ -169,7 +169,7 @@ void I2CHandle()
             sendStopCond();                     // Send a stop condition
             I2CBufferMoveToNextInstruction();   // Move to the next instruction
             dataPtr = 0;
-            g_state = 0;                        // set g_state to 0 (I2C ready/off)
+            g_s_state = 0;                        // set g_s_state to 0 (I2C ready/off)
             return;
             
         // Data received and ACK transmitted
@@ -195,7 +195,7 @@ void I2CHandle()
             sendStopCond();                     // Send a stop condition
             I2CBufferMoveToNextInstruction();   // Move to the next instruction
             dataPtr = 0;
-            g_state = 0;                        // set g_state to 0 (I2C ready/off)
+            g_s_state = 0;                        // set g_s_state to 0 (I2C ready/off)
             return;
             
         // If one of the other statuses pops up
@@ -203,11 +203,11 @@ void I2CHandle()
             sendStopCond();                     // Send a stop condition
             I2CBufferMoveToNextInstruction();   // Move to the next instruction
             dataPtr = 0;
-            g_state = 0;                        // set g_state to 0 (I2C ready/off)
+            g_s_state = 0;                        // set g_s_state to 0 (I2C ready/off)
             return;
     }
-    // If we haven't returned, then make sure g_state is 1
-    g_state = 1;
+    // If we haven't returned, then make sure g_s_state is 1
+    g_s_state = 1;
 }
 
 /* Called often to determine when to start I2C transaction
@@ -216,14 +216,14 @@ void I2CTask()
 {
     ATOMIC_BLOCK(ATOMIC_FORCEON)
     {
-        // If g_state is low...
-        if(!g_state)
+        // If g_s_state is low...
+        if(!g_s_state)
         {   //...and there is an instruction available
             if (I2CBufferGetCurrentSize())
             {
-                // Send a start condition and update g_state
+                // Send a start condition and update g_s_state
                 sendStartCond();
-                g_state = 1;
+                g_s_state = 1;
             }
         }
     }

@@ -158,12 +158,13 @@ void VL6180xInit(int startAddress)
 }
 
 
-static uint8_t VL6180XRangeResultLocation[2] = {0x00, 0x62};
-static uint8_t VL6180XIntClear[3] = {0x00, 0x15, 0x07};
 /* Adds the instructions to the I2C bus to perform a read from a
  * VL6180x distance sensor */
 I2CInstruction_ID VL6180xAddRead(int devAddress, uint8_t * result)
 {
+    static uint8_t VL6180XRangeResultLocation[2] = {0x00, 0x62};
+    static uint8_t VL6180XIntClear[3] = {0x00, 0x15, 0x07};
+
     int timeOutCounter = 0;
     while(timeOutCounter < 100 && !I2CBufferAddInstruction(devAddress, I2C_WRITE, VL6180XRangeResultLocation, 2))
     {

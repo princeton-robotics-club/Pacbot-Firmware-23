@@ -23,34 +23,34 @@
 #include <avr/interrupt.h>
 
 // Here is where we currently store sensor data
-volatile uint8_t g_s_fusionResult[6] = {0};
-volatile double g_s_fusionFormatted[3] = {0};
-volatile double g_s_encoderResult[NUM_ENCODERS] = {0};
-volatile uint8_t g_s_distResult[8] = {0};
+volatile static uint8_t g_s_fusionResult[6] = {0};
+volatile static double g_s_fusionFormatted[3] = {0};
+volatile static double g_s_encoderResult[NUM_ENCODERS] = {0};
+volatile static uint8_t g_s_distResult[8] = {0};
 
 // Milliseconds since initialization
-static unsigned long volatile g_millis = 0;
+volatile static unsigned long g_s_millis = 0;
 
 // This handles our millisecond counter overflow
 ISR(TIMER0_OVF_vect)
 {
     // Increment milliseconds
-    g_millis++;
+    g_s_millis++;
 
     // Ask for IMU data on every 10 milliseconds
-    if (!(g_millis % 10))
+    if (!(g_s_millis % 10))
     {
         bno055GetAllEuler(&g_s_fusionResult[0]);
     }
 
     // Ask for Encoder data every 5 milliseconds (offset by 2)
-    if (!((g_millis-2) % 5))
+    if (!((g_s_millis-2) % 5))
     {
         getEncoderDistances(g_s_encoderResult);
     }
 
     // Ask for Distance data on every 10 milliseconds (offset by 5)
-    if (!((g_millis-5) % 10))
+    if (!((g_s_millis-5) % 10))
     {
         VL6180xAddRead(0x50, &g_s_distResult[0]);
         VL6180xAddRead(0x51, &g_s_distResult[1]);
