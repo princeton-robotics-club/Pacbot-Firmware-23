@@ -351,11 +351,9 @@ int I2CBufferContains(I2CInstruction_ID instr)
         {
             if (instr == ibt->buf[i].instrID)
             {
-                sei();
                 return 1;
             }
         }
-        sei();
         return 0;
     }
     // This line surpresses a completely useless GCC warning that I was sick of seeing

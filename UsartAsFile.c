@@ -1,3 +1,4 @@
+#include <util/atomic.h>
 #include <avr/io.h>
 #include <stdio.h>
 #include <avr/interrupt.h>
@@ -117,25 +118,26 @@ ISR(USART1_TX_vect)
  * Sets global interrupt enable */
 int usartTask(void)
 {
-    cli();
     int retval = -1;
-    if (g_writeBuf.size)
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
     {
-        if (UCSR1A & (1<<UDRE1))
+        if (g_writeBuf.size)
         {
-            retval = *g_writeBuf.r_ptr;
-            g_writeBuf.r_ptr++;
-            g_writeBuf.size--;
-            UDR1 = retval;
-        }
+            if (UCSR1A & (1<<UDRE1))
+            {
+                retval = *g_writeBuf.r_ptr;
+                g_writeBuf.r_ptr++;
+                g_writeBuf.size--;
+                UDR1 = retval;
+            }
 
-        if (g_writeBuf.r_ptr >= (g_writeBuf.buffer + g_maxSize))
-        {
-            g_writeBuf.r_ptr = g_writeBuf.buffer;
+            if (g_writeBuf.r_ptr >= (g_writeBuf.buffer + g_maxSize))
+            {
+                g_writeBuf.r_ptr = g_writeBuf.buffer;
+            }
+            
         }
-        
     }
-    sei();
     return retval;
     
 }
@@ -144,23 +146,21 @@ int usartTask(void)
  * Sets global interrupt enable */
 static int USART_getChar(FILE * stream)
 {
-    cli();
-
     int retval = -1;
-    if (g_receiveBuf.size)
-    {
-        retval = *g_receiveBuf.r_ptr;
-        g_receiveBuf.r_ptr++;
-        g_receiveBuf.size--;
-
-        if (g_receiveBuf.r_ptr >= (g_receiveBuf.buffer + g_maxSize))
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+    {    
+        if (g_receiveBuf.size)
         {
-            g_receiveBuf.r_ptr = g_receiveBuf.buffer;
+            retval = *g_receiveBuf.r_ptr;
+            g_receiveBuf.r_ptr++;
+            g_receiveBuf.size--;
+
+            if (g_receiveBuf.r_ptr >= (g_receiveBuf.buffer + g_maxSize))
+            {
+                g_receiveBuf.r_ptr = g_receiveBuf.buffer;
+            }
         }
     }
-
-    sei();
-
     return retval;
 }
 
@@ -168,23 +168,25 @@ static int USART_getChar(FILE * stream)
  * Returns 0 if successful or -1 if unsuccessful */
 static int USART_putChar(char c, FILE * stream)
 {
-    cli();
-    if (g_writeBuf.size < g_maxSize)
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
     {
-        *g_writeBuf.w_ptr = c;
-        g_writeBuf.w_ptr++;
-
-        if (g_writeBuf.w_ptr >= (g_writeBuf.buffer + g_maxSize))
+        if (g_writeBuf.size < g_maxSize)
         {
-            g_writeBuf.w_ptr = g_writeBuf.buffer;
-        }
+            *g_writeBuf.w_ptr = c;
+            g_writeBuf.w_ptr++;
 
-        g_writeBuf.size++;
+            if (g_writeBuf.w_ptr >= (g_writeBuf.buffer + g_maxSize))
+            {
+                g_writeBuf.w_ptr = g_writeBuf.buffer;
+            }
+
+            g_writeBuf.size++;
+            usartTask();
+            return 0;
+        }
+        // usartTask reenables the interrupts
         usartTask();
-        return 0;
+        return -1;
     }
-    // usartTask reenables the interrupts
-    usartTask();
-    return -1;
 }
 

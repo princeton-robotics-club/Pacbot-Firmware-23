@@ -8,6 +8,7 @@
 // Other includes
 #include <avr/interrupt.h>
 #include <stdint.h>
+#include <util/atomic.h>
 
 // Custom includes
 #include "I2CDriver.h"
@@ -213,18 +214,19 @@ void I2CHandle()
  * Sets global interrupt enable */
 void I2CTask()
 {
-    cli();
-    // If g_state is low...
-    if(!g_state)
-    {   //...and there is an instruction available
-        if (I2CBufferGetCurrentSize())
-        {
-            // Send a start condition and update g_state
-            sendStartCond();
-            g_state = 1;
+    ATOMIC_BLOCK(ATOMIC_FORCEON)
+    {
+        // If g_state is low...
+        if(!g_state)
+        {   //...and there is an instruction available
+            if (I2CBufferGetCurrentSize())
+            {
+                // Send a start condition and update g_state
+                sendStartCond();
+                g_state = 1;
+            }
         }
     }
-    sei();
 }
 
 /* Called to initialize the I2C to a certain frequency

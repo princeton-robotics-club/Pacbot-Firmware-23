@@ -12,7 +12,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#define I2C_MAX_BUFFER_SIZE     32
+#define I2C_MAX_BUFFER_SIZE     6
 
 #define I2C_WRITE   0
 #define I2C_READ    1
