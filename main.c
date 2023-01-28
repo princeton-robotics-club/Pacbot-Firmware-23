@@ -25,7 +25,7 @@
 // Here is where we currently store sensor data
 volatile static uint8_t g_s_fusionResult[6] = {0};
 volatile static double g_s_fusionFormatted[3] = {0};
-volatile static double g_s_encoderResult[NUM_ENCODERS] = {0};
+volatile static long g_s_encoderResult[NUM_ENCODERS] = {0};
 volatile static uint8_t g_s_distResult[8] = {0};
 
 // Milliseconds since initialization
@@ -108,7 +108,7 @@ int main(void)
         fusionRawToFormatted(g_s_fusionResult, g_s_fusionFormatted);
 
         // Print the sensor data
-        fprintf(usartStream_Ptr, "%lf; %lf, %lf; %d, %d, %d, %d, %d, %d, %d, %d\n",
+        fprintf(usartStream_Ptr, "%lf; %ld, %ld; %d, %d, %d, %d, %d, %d, %d, %d\n",
             *g_s_fusionFormatted,
             g_s_encoderResult[0],
             g_s_encoderResult[1],
@@ -131,6 +131,9 @@ int main(void)
             free(read);
             setRightMotorPower(0);
             setLeftMotorPower(0);
+
+            DDRE |= (1 << PE6);
+            PORTE |= (1 << PE6);
         }
 
         // This runs some clks to give the prints time to send

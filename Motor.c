@@ -29,8 +29,8 @@ resolution for the duty cycle, and a PWM frequency of roughly 16MHz / 4096
 int leftMotorDir = DIR_FW;
 int rightMotorDir = DIR_FW;
 
-volatile int leftMotorPwmPort = M21;
-volatile int leftMotorConstPort = M22;
+volatile int leftMotorPwmPort = M22;
+volatile int leftMotorConstPort = M21;
 volatile int rightMotorPwmPort = M11;
 volatile int rightMotorConstPort = M12;
 
@@ -69,8 +69,8 @@ void setLeftMotorPower(int pwrSigned) {
     leftMotorDir = (pwrSigned >= 0) ? DIR_FW : DIR_BW;
 
     // Update the port mappings
-    leftMotorPwmPort = ((leftMotorDir == DIR_FW) ? M21 : M22);
-    leftMotorConstPort = ((leftMotorDir == DIR_FW) ? M22 : M21);
+    leftMotorPwmPort = ((leftMotorDir == DIR_FW) ? M22 : M21);
+    leftMotorConstPort = ((leftMotorDir == DIR_FW) ? M21 : M22);
 
     // Sets the constant pin to ground
     M2_PORT &= ~(1 << leftMotorConstPort);

@@ -4,17 +4,17 @@
 // Two motor encoders
 #define NUM_ENCODERS 2
 
-// Effective radius of the wheels (cm)
-#define WHEEL_RADIUS 1.0
+// Effective radius of the wheels (mm)
+#define WHEEL_RADIUS 10
 
-// Radians per encoder tick of the motors ( (2 pi radians / revolution) / (192 ticks per revolution) = 0.0328249235)
-#define ENCODER_RAD_PER_TICK 0.0328249235
+// (Groups of 10^(-6)) Radians per encoder tick of the motors ( (2 pi radians / revolution) / (180 ticks per revolution) = 0.0328249235)
+#define ENCODER_SCALED_RAD_PER_TICK 34907
 
 // Distance traveled by wheels per encoder tick (cm)
-#define ENCODER_CM_PER_TICK (WHEEL_RADIUS * ENCODER_RAD_PER_TICK)
+#define ENCODER_NM_PER_TICK (WHEEL_RADIUS * ENCODER_SCALED_RAD_PER_TICK)
 
 // Initializes the encoders
 void encoderInit();
 
 // Gets the total ticks traveled for this particular encoder
-void getEncoderDistances(double * encoderDistances);
+void getEncoderDistances(long * encoderDistances);

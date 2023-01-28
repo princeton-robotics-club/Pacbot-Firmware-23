@@ -57,11 +57,11 @@ ISR(PCINT0_vect) {
     #endif
 }
 
-void getEncoderDistances(double * encoderDistances) {
+void getEncoderDistances(long * encoderDistances) {
 
     // Indexes the encoders for a for-loop
     for (int i = 0; i < NUM_ENCODERS; i++) 
-        encoderDistances[i] = encoders[i].totalTicks * ENCODER_CM_PER_TICK;
+        encoderDistances[i] = encoders[i].totalTicks * ENCODER_NM_PER_TICK;
 }
 
 // Called once, initializes input conditions for the encoder pins
