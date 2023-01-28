@@ -39,6 +39,7 @@ ISR(TIMER1_COMPB_vect) {
 
     // Turns off motor pin 2
     M2_PORT &= ~(1 << leftMotorPwmPort);
+    TIMSK1 &= ~(1 << OCIE1B);
 
 }
 
@@ -47,6 +48,7 @@ ISR(TIMER1_COMPC_vect) {
 
     // Turns off motor pin 1
     M1_PORT &= ~(1 << rightMotorPwmPort);
+    TIMSK1 &= ~(1 << OCIE1C);
 
 }
 
@@ -56,6 +58,7 @@ ISR(TIMER1_OVF_vect) {
     // Turns on both motor pins
     M1_PORT |= (1 << rightMotorPwmPort);
     M2_PORT |= (1 << leftMotorPwmPort);
+    TIMSK1 |=  (1 << OCIE1B) | (1 << OCIE1C);
 
 }
 
@@ -134,7 +137,7 @@ void motorsInit() {
     OCR1A = TOP;
 
     // Sets the clock prescaler to 1x (0 bits)
-    TCCR1B |= (1 << CS10);
+    TCCR1B |= (1 << CS10) | (1 << CS11);
 
     // Enables the motor pins as outputs
     M1_DDR |= (1 << M11) | (1 << M12);

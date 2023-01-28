@@ -97,8 +97,8 @@ int main(void)
 
     millisInit();
     motorsInit();
-    //setRightMotorPower(1024);
-    //setLeftMotorPower(1024);
+    setRightMotorPower(1024);
+    setLeftMotorPower(1024);
 
     // Main loop
     while (1) 
