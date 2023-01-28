@@ -26,6 +26,9 @@ resolution for the duty cycle, and a PWM frequency of roughly 16MHz / 4096
 #include <avr/interrupt.h>
 #include "Motor.h"
 
+int leftMotorDir = DIR_FW;
+int rightMotorDir = DIR_FW;
+
 // Triggers during comparison match for motor 1 (turns off motor 1)
 ISR(TIMER1_COMPB_vect) {
 

@@ -23,16 +23,18 @@ typedef struct Encoder
 
 } Encoder;
 
+// Mappings between Motor Encoder Sensor Name (as seen on schematic) and Pin Change Interrupt (PCINT) Number
+int encPinsA[NUM_ENCODERS] = {PINB4, PINB0}; // ENC11, ENC21
+int encPinsB[NUM_ENCODERS] = {PINB5, PINB1}; // ENC12, ENC22
+
 // Initializes encoder objects to be used by other functions
-static volatile Encoder encoders[NUM_ENCODERS];
+volatile Encoder encoders[NUM_ENCODERS];
 
 // Called during every pin change interrupt (ISR = Interrupt Service Routine)
 ISR(PCINT0_vect) {
 
     // Indexes the encoders for a for-loop
-    int i = 0;
-
-    for (; i < NUM_ENCODERS; i++) {
+    for (int i = 0; i < NUM_ENCODERS; i++) {
         
         encoders[i].newStateA = (PINB >> encPinsA[i]) & 1;
         encoders[i].newStateB = (PINB >> encPinsB[i]) & 1;
@@ -58,9 +60,7 @@ ISR(PCINT0_vect) {
 void getEncoderDistances(double * encoderDistances) {
 
     // Indexes the encoders for a for-loop
-    int i = 0;
-
-    for (; i < NUM_ENCODERS; i++) 
+    for (int i = 0; i < NUM_ENCODERS; i++) 
         encoderDistances[i] = encoders[i].totalTicks * ENCODER_CM_PER_TICK;
 }
 
@@ -68,9 +68,7 @@ void getEncoderDistances(double * encoderDistances) {
 void encoderInit() {
 
     // Indexes the encoders for a for-loop
-    int i = 0;
-
-    for (; i < NUM_ENCODERS; i++) {
+    for (int i = 0; i < NUM_ENCODERS; i++) {
 
         // Enables both of the encoder pins as inputs
         DDRB &= ~(1<<encPinsA[i]) & ~(1<<encPinsB[i]);

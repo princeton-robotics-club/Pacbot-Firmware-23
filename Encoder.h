@@ -13,10 +13,6 @@
 // Distance traveled by wheels per encoder tick (cm)
 #define ENCODER_CM_PER_TICK (WHEEL_RADIUS * ENCODER_RAD_PER_TICK)
 
-// Mappings between Motor Encoder Sensor Name (as seen on schematic) and Pin Change Interrupt (PCINT) Number
-static int encPinsA[NUM_ENCODERS] = {PINB4, PINB0}; // ENC11, ENC21
-static int encPinsB[NUM_ENCODERS] = {PINB5, PINB1}; // ENC12, ENC22
-
 // Initializes the encoders
 void encoderInit();
 

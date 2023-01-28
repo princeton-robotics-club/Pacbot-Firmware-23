@@ -22,8 +22,6 @@
 // Motor directions
 #define DIR_BW 0
 #define DIR_FW 1
-static int leftMotorDir = DIR_FW;
-static int rightMotorDir = DIR_FW;
 
 // Get PWM port number for motor 1
 #define M1_PWM_PORT   ((leftMotorDir == DIR_FW) ? M11 : M12)
