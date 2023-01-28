@@ -23,12 +23,6 @@
 #define DIR_BW 0
 #define DIR_FW 1
 
-// Get PWM port number for motor 1
-#define M1_PWM_PORT   ((leftMotorDir == DIR_FW) ? M11 : M12)
-#define M2_PWM_PORT   ((rightMotorDir == DIR_FW) ? M21 : M22)
-#define M1_CONST_PORT ((leftMotorDir == DIR_FW) ? M12 : M11)
-#define M2_CONST_PORT ((rightMotorDir == DIR_FW) ? M22 : M21)
-
 // Initializes the motors
 void motorsInit();
 

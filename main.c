@@ -97,8 +97,8 @@ int main(void)
 
     millisInit();
     motorsInit();
-    setRightMotorPower(1024);
-    setLeftMotorPower(1024);
+    //setRightMotorPower(1024);
+    //setLeftMotorPower(1024);
 
     // Main loop
     while (1) 
@@ -129,8 +129,8 @@ int main(void)
             fgets(read, readBufSize+1, usartStream_Ptr);                
             fprintf(usartStream_Ptr, read);
             free(read);
-            setRightMotorPower(-1024);
-            setLeftMotorPower(-1024);
+            setRightMotorPower(0);
+            setLeftMotorPower(0);
         }
 
         // This runs some clks to give the prints time to send

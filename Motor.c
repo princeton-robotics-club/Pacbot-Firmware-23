@@ -34,19 +34,19 @@ volatile int leftMotorConstPort = M22;
 volatile int rightMotorPwmPort = M11;
 volatile int rightMotorConstPort = M12;
 
-// Triggers during comparison match for motor 1 (turns off motor 1)
+// Triggers during comparison match for left motor (turns off motor 2)
 ISR(TIMER1_COMPB_vect) {
-
-    // Turns off motor pin 1
-    M1_PORT &= ~(1 << rightMotorPwmPort);
-
-}
-
-// Triggers during comparison match for motor 2 (turns off motor 2)
-ISR(TIMER1_COMPC_vect) {
 
     // Turns off motor pin 2
     M2_PORT &= ~(1 << leftMotorPwmPort);
+
+}
+
+// Triggers during comparison match for right motor (turns off motor 1)
+ISR(TIMER1_COMPC_vect) {
+
+    // Turns off motor pin 1
+    M1_PORT &= ~(1 << rightMotorPwmPort);
 
 }
 
@@ -70,7 +70,7 @@ void setLeftMotorPower(int pwrSigned) {
     leftMotorConstPort = ((leftMotorDir == DIR_FW) ? M22 : M21);
 
     // Sets the constant pin to ground
-    M1_PORT &= ~(1 << rightMotorConstPort);
+    M2_PORT &= ~(1 << leftMotorConstPort);
 
     // Sets the comparison value for the left motor
     if (pwrSigned < 0) OCR1B = -pwrSigned;
@@ -92,7 +92,7 @@ void setRightMotorPower(int pwrSigned) {
     rightMotorConstPort = ((rightMotorDir == DIR_FW) ? M12 : M11);
 
     // Sets the constant pin to ground
-    M2_PORT &= ~(1 << leftMotorConstPort);
+    M1_PORT &= ~(1 << rightMotorConstPort);
 
     // Sets the comparison value for the left motor
     if (pwrSigned < 0) OCR1C = -pwrSigned;
