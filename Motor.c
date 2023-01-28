@@ -29,11 +29,16 @@ resolution for the duty cycle, and a PWM frequency of roughly 16MHz / 4096
 int leftMotorDir = DIR_FW;
 int rightMotorDir = DIR_FW;
 
+volatile int leftMotorPwmPort = M21;
+volatile int leftMotorConstPort = M22;
+volatile int rightMotorPwmPort = M11;
+volatile int rightMotorConstPort = M12;
+
 // Triggers during comparison match for motor 1 (turns off motor 1)
 ISR(TIMER1_COMPB_vect) {
 
     // Turns off motor pin 1
-    M1_PORT &= ~(1 << M1_PWM_PORT);
+    M1_PORT &= ~(1 << rightMotorPwmPort);
 
 }
 
@@ -41,7 +46,7 @@ ISR(TIMER1_COMPB_vect) {
 ISR(TIMER1_COMPC_vect) {
 
     // Turns off motor pin 2
-    M2_PORT &= ~(1 << M2_PWM_PORT);
+    M2_PORT &= ~(1 << leftMotorPwmPort);
 
 }
 
@@ -49,8 +54,8 @@ ISR(TIMER1_COMPC_vect) {
 ISR(TIMER1_OVF_vect) {
     
     // Turns on both motor pins
-    M1_PORT |= (1 << M1_PWM_PORT);
-    M2_PORT |= (1 << M2_PWM_PORT);
+    M1_PORT |= (1 << rightMotorPwmPort);
+    M2_PORT |= (1 << leftMotorPwmPort);
 
 }
 
@@ -60,8 +65,12 @@ void setLeftMotorPower(int pwrSigned) {
     // Determines the direction
     leftMotorDir = (pwrSigned >= 0) ? DIR_FW : DIR_BW;
 
+    // Update the port mappings
+    leftMotorPwmPort = ((leftMotorDir == DIR_FW) ? M21 : M22);
+    leftMotorConstPort = ((leftMotorDir == DIR_FW) ? M22 : M21);
+
     // Sets the constant pin to ground
-    M1_PORT &= ~(1 << M1_CONST_PORT);
+    M1_PORT &= ~(1 << rightMotorConstPort);
 
     // Sets the comparison value for the left motor
     if (pwrSigned < 0) OCR1B = -pwrSigned;
@@ -78,8 +87,12 @@ void setRightMotorPower(int pwrSigned) {
     // Determines the direction
     rightMotorDir = (pwrSigned >= 0) ? DIR_FW : DIR_BW;
 
+    // Update the port mappings
+    rightMotorPwmPort = ((rightMotorDir == DIR_FW) ? M11 : M12);
+    rightMotorConstPort = ((rightMotorDir == DIR_FW) ? M12 : M11);
+
     // Sets the constant pin to ground
-    M2_PORT &= ~(1 << M2_CONST_PORT);
+    M2_PORT &= ~(1 << leftMotorConstPort);
 
     // Sets the comparison value for the left motor
     if (pwrSigned < 0) OCR1C = -pwrSigned;

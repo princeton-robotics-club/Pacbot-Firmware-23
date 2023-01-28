@@ -24,8 +24,8 @@ typedef struct Encoder
 } Encoder;
 
 // Mappings between Motor Encoder Sensor Name (as seen on schematic) and Pin Change Interrupt (PCINT) Number
-int encPinsA[NUM_ENCODERS] = {PINB4, PINB0}; // ENC11, ENC21
-int encPinsB[NUM_ENCODERS] = {PINB5, PINB1}; // ENC12, ENC22
+const int encPinsA[NUM_ENCODERS] = {PINB4, PINB0}; // ENC11, ENC21
+const int encPinsB[NUM_ENCODERS] = {PINB5, PINB1}; // ENC12, ENC22
 
 // Initializes encoder objects to be used by other functions
 volatile Encoder encoders[NUM_ENCODERS];
