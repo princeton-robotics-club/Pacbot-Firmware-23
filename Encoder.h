@@ -13,6 +13,8 @@
 // Distance traveled by wheels per encoder tick (cm)
 #define ENCODER_NM_PER_TICK (WHEEL_RADIUS * ENCODER_SCALED_RAD_PER_TICK)
 
+// Direction of the encoder
+
 // Initializes the encoders
 void encoderInit();
 

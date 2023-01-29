@@ -62,6 +62,14 @@ void getEncoderDistances(long * encoderDistances) {
     // Indexes the encoders for a for-loop
     for (int i = 0; i < NUM_ENCODERS; i++) 
         encoderDistances[i] = encoders[i].totalTicks * ENCODER_NM_PER_TICK;
+    encoderDistances[0] = -encoderDistances[0]; // Reverses the left encoder distance to account for it going CCW
+}
+
+void resetEncoderDistances() {
+    
+    // Indexes the encoders for a for-loop
+    for (int i = 0; i < NUM_ENCODERS; i++)
+        encoders[i].totalTicks = 0;
 }
 
 // Called once, initializes input conditions for the encoder pins
