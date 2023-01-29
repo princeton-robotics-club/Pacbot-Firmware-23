@@ -6,4 +6,6 @@
 #define KD 0
 
 // Returns a new pwm setting given target speed and current speed
-// int pwmSettingPID(long currSpeed, long goalSpeed);
+int pwmAdjustFixedSpeed(long currSpeed, long goalSpeed) {
+    ;
+}

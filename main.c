@@ -21,11 +21,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <avr/interrupt.h>
+#include <inttypes.h>
 
 // Here is where we currently store sensor data
 volatile static uint8_t g_s_fusionResult[6] = {0};
 volatile static double g_s_fusionFormatted[3] = {0};
-volatile static long g_s_encoderResult[NUM_ENCODERS] = {0};
+volatile static uint64_t g_s_encoderResult[NUM_ENCODERS] = {0};
 volatile static uint8_t g_s_distResult[8] = {0};
 
 // Milliseconds since initialization
@@ -110,8 +111,8 @@ int main(void)
         // Print the sensor data
         fprintf(usartStream_Ptr, "%lf; %ld, %ld; %d, %d, %d, %d, %d, %d, %d, %d\n",
             *g_s_fusionFormatted,
-            g_s_encoderResult[0],
-            g_s_encoderResult[1],
+            (long) g_s_encoderResult[0],
+            (long) g_s_encoderResult[1],
             g_s_distResult[0],
             g_s_distResult[1],
             g_s_distResult[2],
