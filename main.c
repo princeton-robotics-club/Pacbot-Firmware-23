@@ -52,14 +52,20 @@ ISR(TIMER0_OVF_vect)
             goalAngle = currAngle;
     }
 
-    // Ask for Encoder data every 5 milliseconds (offset by 2)
-    if (!((g_s_millis-2) % 5))
+    // Run PID every 10 milliseconds (offset by 2)
+    if (!((g_s_millis+2) % 10))
+    {
+        pidStraightLine(motors_on);
+    }
+
+    // Ask for Encoder data every 5 milliseconds (offset by 3)
+    if (!((g_s_millis-3) % 5))
     {
         getEncoderDistances(g_s_encoderResult);
     }
 
-    // Ask for Distance data on every 10 milliseconds (offset by 5)
-    if (!((g_s_millis-5) % 10))
+    // Ask for Distance data on every 10 milliseconds (offset by 1)
+    if (!((g_s_millis+1) % 10))
     {
         VL6180xAddRead(0x50, &g_s_distResult[0]);
         VL6180xAddRead(0x51, &g_s_distResult[1]);
@@ -141,8 +147,5 @@ int main(void)
             I2CTask();
         }
 
-        pidStraightLine(motors_on);
-
     }
 }
-
