@@ -6,6 +6,7 @@
  */ 
 
 #include "Defines.h"
+#include "Control.h"
 #include "I2CInstruction.h"
 #include "I2CDriver.h"
 #include "UsartAsFile.h"
@@ -24,10 +25,14 @@
 #include <inttypes.h>
 
 // Here is where we currently store sensor data
-volatile static uint8_t g_s_fusionResult[6] = {0};
-volatile static double g_s_fusionFormatted[3] = {0};
-volatile static uint64_t g_s_encoderResult[NUM_ENCODERS] = {0};
-volatile static uint8_t g_s_distResult[8] = {0};
+volatile uint8_t g_s_fusionResult[6] = {0};
+volatile double g_s_fusionFormatted[3] = {0};
+volatile uint64_t g_s_encoderResult[NUM_ENCODERS] = {0};
+volatile uint8_t g_s_distResult[8] = {0};
+
+int motors_on = 0;
+double goalAngle = 0.0;
+double currAngle = 0.0;
 
 // Milliseconds since initialization
 volatile static unsigned long g_s_millis = 0;
@@ -42,6 +47,9 @@ ISR(TIMER0_OVF_vect)
     if (!(g_s_millis % 10))
     {
         bno055GetAllEuler(&g_s_fusionResult[0]);
+        currAngle = g_s_fusionFormatted[0];
+        if (!motors_on)
+            goalAngle = currAngle;
     }
 
     // Ask for Encoder data every 5 milliseconds (offset by 2)
@@ -98,8 +106,6 @@ int main(void)
 
     millisInit();
     motorsInit();
-    setRightMotorPower(1024);
-    setLeftMotorPower(1024);
 
     // Main loop
     while (1) 
@@ -109,18 +115,8 @@ int main(void)
         fusionRawToFormatted(g_s_fusionResult, g_s_fusionFormatted);
 
         // Print the sensor data
-        fprintf(usartStream_Ptr, "%lf; %ld, %ld; %d, %d, %d, %d, %d, %d, %d, %d\n",
-            *g_s_fusionFormatted,
-            (long) g_s_encoderResult[0],
-            (long) g_s_encoderResult[1],
-            g_s_distResult[0],
-            g_s_distResult[1],
-            g_s_distResult[2],
-            g_s_distResult[3],
-            g_s_distResult[4],
-            g_s_distResult[5],
-            g_s_distResult[6],
-            g_s_distResult[7]);
+        fprintf(usartStream_Ptr, "%lf, %lf, %d, %d; %d\n",
+            currAngle, goalAngle, OCR1B, OCR1C, motors_on);
 
         // Print any data we've received (loopback testing)
         int readBufSize = getReceiveBufSize();
@@ -130,18 +126,23 @@ int main(void)
             fgets(read, readBufSize+1, usartStream_Ptr);                
             fprintf(usartStream_Ptr, read);
             free(read);
-            setRightMotorPower(0);
-            setLeftMotorPower(0);
 
             DDRE |= (1 << PE6);
             PORTE |= (1 << PE6);
+
+            motors_on ^= 1;
         }
+
+        if (g_s_distResult[0] < 200) motors_on = 0;
 
         // This runs some clks to give the prints time to send
         for (long i = 0; i < 2000L; i++)
         {
             I2CTask();
         }
+
+        pidStraightLine(motors_on);
+
     }
 }
 
