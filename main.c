@@ -47,15 +47,16 @@ ISR(TIMER0_OVF_vect)
     if (!(g_s_millis % 10))
     {
         bno055GetAllEuler(&g_s_fusionResult[0]);
-        currAngle = g_s_fusionFormatted[0];
-        if (!motors_on)
-            goalAngle = currAngle;
     }
 
     // Run PID every 10 milliseconds (offset by 2)
     if (!((g_s_millis+2) % 10))
     {
+        fusionRawToFormatted(g_s_fusionResult, g_s_fusionFormatted);
+        currAngle = g_s_fusionFormatted[0];
         pidStraightLine(motors_on);
+        if (!motors_on)
+            goalAngle = currAngle;
     }
 
     // Ask for Encoder data every 5 milliseconds (offset by 3)
