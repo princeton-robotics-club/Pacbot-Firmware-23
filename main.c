@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <avr/interrupt.h>
 #include <inttypes.h>
+#include <string.h>
 
 // Here is where we currently store sensor data
 volatile uint8_t g_s_fusionResult[6] = {0};
@@ -33,6 +34,7 @@ volatile uint8_t g_s_distResult[8] = {0};
 int motors_on = 0;
 double goalAngle = 0.0;
 double currAngle = 0.0;
+double err_strength;
 
 // Milliseconds since initialization
 volatile static unsigned long g_s_millis = 0;
@@ -54,7 +56,8 @@ ISR(TIMER0_OVF_vect)
     {
         fusionRawToFormatted(g_s_fusionResult, g_s_fusionFormatted);
         currAngle = g_s_fusionFormatted[0];
-        pidStraightLine(motors_on);
+        err_strength = pidStraightLine(motors_on);
+        //if (err_strength != 0.0) fprintf(usartStream_Ptr, "%lf\n", err_strength);
         if (!motors_on)
             goalAngle = currAngle;
     }
@@ -113,6 +116,11 @@ int main(void)
 
     millisInit();
     motorsInit();
+    
+    char k_inp[5];
+    char k_name = 0;
+    double k_val = 0;
+    char * k_tmp;
 
     // Main loop
     while (1) 
@@ -122,25 +130,63 @@ int main(void)
         fusionRawToFormatted(g_s_fusionResult, g_s_fusionFormatted);
 
         // Print the sensor data
-        fprintf(usartStream_Ptr, "%lf, %lf, %d, %d; %d\n",
-            currAngle, goalAngle, OCR1B, OCR1C, motors_on);
+        //fprintf(usartStream_Ptr, "%lf, %lf, %d, %d; %d, %lf\n",
+        //    currAngle, goalAngle, OCR1B, OCR1C, motors_on, err_strength);
 
         // Print any data we've received (loopback testing)
         int readBufSize = getReceiveBufSize();
         if (readBufSize)
         {
-            char * read = malloc(readBufSize+1);
-            fgets(read, readBufSize+1, usartStream_Ptr);                
-            fprintf(usartStream_Ptr, read);
-            free(read);
+            fgets(k_inp, readBufSize+1, usartStream_Ptr);
+
+            k_name = k_inp[0] | 32;
+            k_val = strtod(k_inp+1, &k_tmp);
+
+            switch (k_name) {
+                case 'p': 
+                    kp = k_val;
+                    motors_on = 0;
+                    fprintf(usartStream_Ptr, "[c] kp changed to %lf\n", kp);
+                    break;
+                case 'i':
+                    ki = k_val;
+                    motors_on = 0;
+                    fprintf(usartStream_Ptr, "[c] ki changed to %lf\n", ki);
+                    break;
+                case 'd':
+                    kd = k_val;
+                    motors_on = 0;
+                    fprintf(usartStream_Ptr, "[c] kd changed to %lf\n", kd);
+                    break;
+                case 'm':
+                    av_pwm = (int)(40.95 * k_val);
+                    motors_on = 1;
+                    fprintf(usartStream_Ptr, "[c] motor resting speed changed to %d\n[c] activated motors\n", (int)av_pwm);
+                    break;
+                case 'r':
+                    goalAngle = ((int)(currAngle + k_val) % 360 + 360) % 360;
+                    fprintf(usartStream_Ptr, "[c] new goal angle set\n[c] activated motors\n");
+                    motors_on = 1;
+                    av_pwm = 0;
+                    break;
+                case '+':
+                    ramp_sp = (int)k_val;
+                    fprintf(usartStream_Ptr, "[c] ramp_sp = %d", ramp_sp);
+                    break;
+                case '?':
+                    fprintf(usartStream_Ptr, "[c] kp = %lf, ki = %lf, kd = %lf, 12-bit pwm = %d, ramp = %d", kp, ki, kd, av_pwm, ramp_sp);
+                    motors_on = 0;
+                    break;
+                default:
+                    fprintf(usartStream_Ptr, "[c] invalid input - cut motors");
+                    motors_on = 0;
+            }
 
             DDRE |= (1 << PE6);
             PORTE |= (1 << PE6);
-
-            motors_on ^= 1;
         }
 
-        if (g_s_distResult[0] < 200) motors_on = 0;
+        //if (g_s_distResult[0] < 200) motors_on = 0;
 
         // This runs some clks to give the prints time to send
         for (long i = 0; i < 2000L; i++)
