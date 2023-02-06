@@ -44,6 +44,8 @@ volatile static unsigned long g_s_millis = 0;
 // This handles our millisecond counter overflow
 ISR(TIMER0_OVF_vect)
 {
+    sei();
+
     // Increment milliseconds
     g_s_millis++;
 
@@ -120,10 +122,13 @@ int main(void)
     millisInit();
     motorsInit();
     
-    char k_inp[5];
+    char k_inp[15];
+    int inp_size;
     char k_name = 0;
     double k_val = 0;
     char * k_tmp;
+    int read_rdy = 0;
+    int index;
 
     // Main loop
     while (1) 
@@ -133,18 +138,32 @@ int main(void)
         fusionRawToFormatted(g_s_fusionResult, g_s_fusionFormatted);
 
         // Print the sensor data
-        //fprintf(usartStream_Ptr, "%lf, %lf, %d, %d; %d, %lf\n",
-        //    currAngle, goalAngle, OCR1B, OCR1C, motors_on, err_strength);
+        //fprintf(usartStream_Ptr, "%lf\n",
+        //    g_s_fusionFormatted[0]);
 
         // Print any data we've received (loopback testing)
         int readBufSize = getReceiveBufSize();
         if (readBufSize)
         {
-            fgets(k_inp, readBufSize+1, usartStream_Ptr);
+            int data = 0;
+            
+            for (; (data = fgetc(usartStream_Ptr)) != -1; index++)
+            {
+                k_inp[index] = data;
+                if (data == '\n')
+                {
+                    read_rdy = 1;
+                }   
+            }            
+        }
 
+        if (read_rdy)
+        {
+            k_inp[index] = 0;
+            index = 0;
             k_name = k_inp[0] | 32;
             k_val = strtod(k_inp+1, &k_tmp);
-
+            
             switch (k_name) {
                 case 'p': 
                     kp = k_val;
@@ -187,6 +206,8 @@ int main(void)
 
             DDRE |= (1 << PE6);
             PORTE |= (1 << PE6);
+
+            read_rdy = 0;
         }
 
         //if (g_s_distResult[0] < 200) motors_on = 0;
