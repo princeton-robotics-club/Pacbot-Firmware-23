@@ -2,7 +2,6 @@
 #include <avr/io.h>
 
 // Encoder pins
-#define NUM_ENCODERS 2
 #define ENC11 PINB4
 #define ENC12 PINB5
 #define ENC21 PINB0

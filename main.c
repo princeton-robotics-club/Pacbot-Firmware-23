@@ -28,8 +28,10 @@
 // Here is where we currently store sensor data
 volatile uint8_t g_s_fusionResult[6] = {0};
 volatile double g_s_fusionFormatted[3] = {0};
-volatile uint64_t g_s_encoderResult[NUM_ENCODERS] = {0};
 volatile uint8_t g_s_distResult[8] = {0};
+
+volatile uint64_t encoderResult[2] = {0};
+volatile uint64_t motorRpms[2] = {0};
 
 int motors_on = 0;
 double goalAngle = 0.0;
@@ -65,7 +67,8 @@ ISR(TIMER0_OVF_vect)
     // Ask for Encoder data every 5 milliseconds (offset by 3)
     if (!((g_s_millis-3) % 5))
     {
-        getEncoderDistances(g_s_encoderResult);
+        motorRpms[0] = encoderResult[0];
+        getEncoderDistances(encoderResult);
     }
 
     // Ask for Distance data on every 10 milliseconds (offset by 1)

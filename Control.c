@@ -11,39 +11,43 @@ extern double currAngle;
 double kp = KP;
 double ki = KI;
 double kd = KD;
+
 int av_pwm = 0;
 int pwm_ramp = 0;
-int ramp_sp = 0;
+// int ramp_sp = 0;
+
+#define min(a, b) (a < b) ? a : b
+#define abs(a) (a < 0) ? -a : a
 
 // Returns a new pwm setting given target speed and current speed
 double pidStraightLine(int motors_on) {
 
     static double currErr = 0;
-    static double lastErr = -999999;
+    static double lastErr = 0;
     static long double errSum = 0.0;
     static double maxErr = 0.0;
-    double retVal = 0.0;
 
     if (!motors_on) {
         killMotors();
         return;
     }
 
-    if (pwm_ramp < av_pwm)
-    {
-        pwm_ramp += ramp_sp;
-    }
+    // if (pwm_ramp < av_pwm)
+    // {
+    //     pwm_ramp += ramp_sp;
+    // }
+
+    // CCW rotation correction is positive
+    // CW rotation correction is negative
 
     currErr = (goalAngle - currAngle + 360);
     while (currErr > 180)
-        currErr -= 360;
+         currErr -= 360;
 
-    if (currErr * maxErr <= 0) maxErr = currErr;
-    else {
-        if (maxErr <= 0 && currErr < maxErr) maxErr = currErr;
-        else if (maxErr >= 0 && currErr > maxErr) maxErr = currErr;
-    }
-    if (currErr == maxErr) retVal = maxErr;
+    // currErr = goalAngle - currAngle;
+    // if (abs(currErr) > 180) {
+    //    currErr += 360;
+    // }
 
     if (lastErr == -999999)
         lastErr = currErr;
@@ -57,7 +61,6 @@ double pidStraightLine(int motors_on) {
     setRightMotorPower(pwm_ramp - adj);
 
     lastErr = currErr;
-    return maxErr;
 }
 
 // Turns motors off
@@ -67,3 +70,11 @@ int killMotors() {
     setRightMotorPower(0);
 
 }
+
+/*
+// Turns motors off
+int killMotors() {
+    setLeftMotorPower(0);
+    setRightMotorPower(0);
+
+}*/
