@@ -1,70 +1,57 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include "Control.h"
 #include "UsartAsFile.h"
 
+/*
 #define KP 28.5
 #define KI 0.008
 #define KD 290
+*/
 
-extern double goalAngle;
-extern double currAngle;
-double kp = KP;
-double ki = KI;
-double kd = KD;
+#define KP 57
+#define KI 4
+#define KD 600
+
+int kp = KP;
+int ki = KI;
+int kd = KD;
 
 int av_pwm = 0;
 int pwm_ramp = 0;
-// int ramp_sp = 0;
-
-#define min(a, b) (a < b) ? a : b
-#define abs(a) (a < 0) ? -a : a
 
 // Returns a new pwm setting given target speed and current speed
-double pidStraightLine(int motors_on) {
+void pidStraightLine(uint8_t motors_on) {
 
-    static double currErr = 0;
-    static double lastErr = 0;
-    static long double errSum = 0.0;
-    static double maxErr = 0.0;
+    static int currErr = 0;
+    static int lastErr = 0;
+    static int64_t errSum = 0;
 
     if (!motors_on) {
         killMotors();
+        lastErr = 0;
+        errSum = 0;
         return;
     }
 
-    // if (pwm_ramp < av_pwm)
-    // {
-    //     pwm_ramp += ramp_sp;
-    // }
+    currErr = (goalHeading - currHeading);
+    while (currErr < -2880) currErr += 5760;
+    while (currErr > 2880) currErr -= 5760;
 
-    // CCW rotation correction is positive
-    // CW rotation correction is negative
-
-    currErr = (goalAngle - currAngle + 360);
-    while (currErr > 180)
-         currErr -= 360;
-
-    // currErr = goalAngle - currAngle;
-    // if (abs(currErr) > 180) {
-    //    currErr += 360;
-    // }
-
-    if (lastErr == -999999)
-        lastErr = currErr;
     errSum += currErr;
 
-    int adj = (currErr) * kp + (currErr - lastErr) * kd + (errSum) * ki;
+    int64_t adj = ((int64_t)currErr * kp + (int64_t)(currErr - lastErr) * kd + ((errSum * ki) >> 6)) >> 5;
 
-    fprintf(usartStream_Ptr, "[c] %lf %d\n", currErr, adj);
+    fprintf(usartStream_Ptr, "[c] %d %d %d\n", currErr, pwm_ramp, (int)adj);
 
-    setLeftMotorPower(pwm_ramp + adj);
-    setRightMotorPower(pwm_ramp - adj);
+    setLeftMotorPower(pwm_ramp + (int)adj);
+    setRightMotorPower(pwm_ramp - (int)adj);
 
     lastErr = currErr;
 }
 
 // Turns motors off
-int killMotors() {
+void killMotors() {
 
     setLeftMotorPower(0);
     setRightMotorPower(0);

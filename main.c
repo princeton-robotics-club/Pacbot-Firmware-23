@@ -25,18 +25,22 @@
 #include <inttypes.h>
 #include <string.h>
 
-// Here is where we currently store sensor data
-volatile uint8_t g_s_fusionResult[6] = {0};
-volatile double g_s_fusionFormatted[3] = {0};
+// Heading data (integer from 0 to 5760)
+volatile uint16_t currHeading = 0;
+volatile uint8_t headingArr[2] = {0};
+volatile uint16_t goalHeading = 0;
+
+// Distance sensor data
 volatile uint8_t g_s_distResult[8] = {0};
 
+// Encoder data
 volatile uint64_t encoderResult[2] = {0};
-volatile uint64_t motorRpms[2] = {0};
+volatile uint64_t currAvTicks = 0;
+volatile uint64_t lastAvTicks = 0;
+volatile uint64_t motorTpms = 0;
+volatile uint64_t goalMotorTpms = 0;
 
-int motors_on = 0;
-double goalAngle = 0.0;
-double currAngle = 0.0;
-double err_strength;
+uint8_t motors_on = 0;
 
 // Milliseconds since initialization
 volatile static unsigned long g_s_millis = 0;
@@ -52,25 +56,25 @@ ISR(TIMER0_OVF_vect)
     // Ask for IMU data on every 10 milliseconds
     if (!(g_s_millis % 10))
     {
-        bno055GetAllEuler(&g_s_fusionResult[0]);
+        bno055GetHeading(headingArr);
+        currHeading = (headingArr[0] | ((uint16_t)(headingArr[1]) << 8));
     }
 
     // Run PID every 10 milliseconds (offset by 2)
     if (!((g_s_millis+2) % 10))
     {
-        fusionRawToFormatted(g_s_fusionResult, g_s_fusionFormatted);
-        currAngle = g_s_fusionFormatted[0];
-        err_strength = pidStraightLine(motors_on);
-        //if (err_strength != 0.0) fprintf(usartStream_Ptr, "%lf\n", err_strength);
+        pidStraightLine(motors_on);
         if (!motors_on)
-            goalAngle = currAngle;
+            goalHeading = currHeading;
     }
 
     // Ask for Encoder data every 5 milliseconds (offset by 3)
     if (!((g_s_millis-3) % 5))
     {
-        motorRpms[0] = encoderResult[0];
-        getEncoderDistances(encoderResult);
+        getAverageEncoderTicks(&currAvTicks);
+        //getEncoderDistances(encoderResult);
+        motorTpms = currAvTicks - lastAvTicks;
+        lastAvTicks = currAvTicks;
     }
 
     // Ask for Distance data on every 10 milliseconds (offset by 1)
@@ -125,7 +129,7 @@ int main(void)
     char k_inp[15];
     int inp_size;
     char k_name = 0;
-    double k_val = 0;
+    int k_val = 0;
     char * k_tmp;
     int read_rdy = 0;
     int index;
@@ -133,13 +137,9 @@ int main(void)
     // Main loop
     while (1) 
     {
-        /* This call converts the first two uint8_t's in g_s_fusionResult
-         * to floats for printing */
-        fusionRawToFormatted(g_s_fusionResult, g_s_fusionFormatted);
 
         // Print the sensor data
-        //fprintf(usartStream_Ptr, "%lf\n",
-        //    g_s_fusionFormatted[0]);
+        // fprintf(usartStream_Ptr, "%d\n", currHeading);
 
         // Print any data we've received (loopback testing)
         int readBufSize = getReceiveBufSize();
@@ -168,35 +168,31 @@ int main(void)
                 case 'p': 
                     kp = k_val;
                     motors_on = 0;
-                    fprintf(usartStream_Ptr, "[c] kp changed to %lf\n", kp);
+                    fprintf(usartStream_Ptr, "[c] kp changed to %d\n", kp);
                     break;
                 case 'i':
                     ki = k_val;
                     motors_on = 0;
-                    fprintf(usartStream_Ptr, "[c] ki changed to %lf\n", ki);
+                    fprintf(usartStream_Ptr, "[c] ki changed to %d\n", ki);
                     break;
                 case 'd':
                     kd = k_val;
                     motors_on = 0;
-                    fprintf(usartStream_Ptr, "[c] kd changed to %lf\n", kd);
+                    fprintf(usartStream_Ptr, "[c] kd changed to %d\n", kd);
                     break;
                 case 'm':
-                    av_pwm = (int)(40.95 * k_val);
+                    pwm_ramp = k_val;
                     motors_on = 1;
-                    fprintf(usartStream_Ptr, "[c] motor resting speed changed to %d\n[c] activated motors\n", (int)av_pwm);
+                    fprintf(usartStream_Ptr, "[c] motor set speed changed to %d\n[c] activated motors\n", pwm_ramp);
                     break;
                 case 'r':
-                    goalAngle = ((int)(currAngle + k_val) % 360 + 360) % 360;
+                    goalHeading = currHeading + (k_val << 4);
                     fprintf(usartStream_Ptr, "[c] new goal angle set\n[c] activated motors\n");
                     motors_on = 1;
                     av_pwm = 0;
                     break;
-                case '+':
-                    ramp_sp = (int)k_val;
-                    fprintf(usartStream_Ptr, "[c] ramp_sp = %d", ramp_sp);
-                    break;
                 case '?':
-                    fprintf(usartStream_Ptr, "[c] kp = %lf, ki = %lf, kd = %lf, 12-bit pwm = %d, ramp = %d", kp, ki, kd, av_pwm, ramp_sp);
+                    fprintf(usartStream_Ptr, "[c] kp = %d, ki = %d, kd = %d, 12-bit pwm = %d", kp, ki, kd, av_pwm);
                     motors_on = 0;
                     break;
                 default:

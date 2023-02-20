@@ -1,16 +1,18 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <inttypes.h>
 
-double pidStraightLine(int motors_on);
-int killMotors();
+#include "Motor.h"
 
-extern int motors_on;
+void pidStraightLine(uint8_t motors_on);
+void killMotors();
 
-extern double kp;
-extern double ki;
-extern double kd;
+extern int kp;
+extern int ki;
+extern int kd;
 extern int av_pwm;
 extern int ramp_sp;
 
-extern double goalAngle;
-extern double currAngle;
+extern volatile uint16_t currHeading;
+extern volatile uint16_t goalHeading;
+extern int pwm_ramp;

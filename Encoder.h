@@ -21,5 +21,8 @@
 // Initializes the encoders
 void encoderInit();
 
-// Gets the total ticks traveled for this particular encoder
+// Gets the total distance traveled for this particular encoder
 void getEncoderDistances(uint64_t * encoderDistances);
+
+// Gets the average number of ticks for the pair of encoders (used for PID of speed)
+void getAverageEncoderTicks(uint64_t * avEncoderTicks);
