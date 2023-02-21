@@ -46,7 +46,7 @@ static volatile struct I2CBuffer buffer = {
     .currPt = -1,
     .currentSize = 0
 };
-const I2CBuffer_pT ibt = &buffer;
+const I2CBuffer_pT ibt = (const I2CBuffer_pT) &buffer;
 
 /* If Instruction is a write then it owns its data pointer.
  * This function frees it from ipt */
@@ -319,7 +319,8 @@ I2CInstruction_ID I2CBufferAddInstruction(int d_add, int rw, uint8_t* dat, int l
         
     return newInstr->instrID;
     }
-
+    // This line surpresses a completely useless GCC warning that I was sick of seeing
+    return 0;
 }
 
 /* Returns the I2CBuffer's current size */
@@ -476,4 +477,4 @@ I2CInstruction_ID I2CInstructionGetID(I2CInstruction_pT ipt)
     return ipt->instrID;
 }
 
-/* End unused API */
+ End unused API */

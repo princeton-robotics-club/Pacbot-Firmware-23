@@ -27,15 +27,15 @@ typedef struct usartBuffer {
 /* The write (transmit) and receive buffers */
 static volatile struct usartBuffer g_receiveBuf = {
     .buffer = {0},
-    .r_ptr = g_receiveBuf.buffer,
-    .w_ptr = g_receiveBuf.buffer,
+    .r_ptr = (char *) g_receiveBuf.buffer,
+    .w_ptr = (char *) g_receiveBuf.buffer,
     .size = 0
 };
 
 static volatile struct usartBuffer g_writeBuf = {
     .buffer = {0},
-    .r_ptr = g_writeBuf.buffer,
-    .w_ptr = g_writeBuf.buffer,
+    .r_ptr = (char *) g_writeBuf.buffer,
+    .w_ptr = (char *) g_writeBuf.buffer,
     .size = 0
 };
 
@@ -85,7 +85,7 @@ ISR(USART1_RX_vect)
 
         if (g_receiveBuf.w_ptr >= (g_receiveBuf.buffer + g_maxSize))
         {
-            g_receiveBuf.w_ptr = g_receiveBuf.buffer;
+            g_receiveBuf.w_ptr = (char *) g_receiveBuf.buffer;
         }
 
         g_receiveBuf.size++;
@@ -107,7 +107,7 @@ ISR(USART1_TX_vect)
 
         if (g_writeBuf.r_ptr >= (g_writeBuf.buffer + g_maxSize))
         {
-            g_writeBuf.r_ptr = g_writeBuf.buffer;
+            g_writeBuf.r_ptr = (char *) g_writeBuf.buffer;
         }
     }
 }
@@ -133,7 +133,7 @@ int usartTask(void)
 
             if (g_writeBuf.r_ptr >= (g_writeBuf.buffer + g_maxSize))
             {
-                g_writeBuf.r_ptr = g_writeBuf.buffer;
+                g_writeBuf.r_ptr = (char *) g_writeBuf.buffer;
             }
             
         }
@@ -157,7 +157,7 @@ static int USART_getChar(FILE * stream)
 
             if (g_receiveBuf.r_ptr >= (g_receiveBuf.buffer + g_maxSize))
             {
-                g_receiveBuf.r_ptr = g_receiveBuf.buffer;
+                g_receiveBuf.r_ptr = (char *) g_receiveBuf.buffer;
             }
         }
     }
@@ -177,7 +177,7 @@ static int USART_putChar(char c, FILE * stream)
 
             if (g_writeBuf.w_ptr >= (g_writeBuf.buffer + g_maxSize))
             {
-                g_writeBuf.w_ptr = g_writeBuf.buffer;
+                g_writeBuf.w_ptr = (char *) g_writeBuf.buffer;
             }
 
             g_writeBuf.size++;
@@ -188,5 +188,7 @@ static int USART_putChar(char c, FILE * stream)
         usartTask();
         return -1;
     }
+    // Suppresses a bs compiler warning
+    return -1;
 }
 
