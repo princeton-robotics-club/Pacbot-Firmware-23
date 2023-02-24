@@ -9,45 +9,67 @@
 #define KD 290
 */
 
-#define KP 57
-#define KI 4
-#define KD 600
+#define KPA 57
+#define KIA 4
+#define KDA 600
+int kpA = KPA;
+int kiA = KIA;
+int kdA = KDA;
 
-int kp = KP;
-int ki = KI;
-int kd = KD;
+#define KPV 60
+#define KIV 0
+#define KDV 700
+int kpV = KPV;
+int kiV = KIV;
+int kdV = KDV;
 
 int av_pwm = 0;
-int pwm_ramp = 0;
 
 // Returns a new pwm setting given target speed and current speed
 void pidStraightLine(uint8_t motors_on) {
 
-    static int currErr = 0;
-    static int lastErr = 0;
-    static int64_t errSum = 0;
+    static int     currAngErr = 0;
+    static int     lastAngErr = 0;
+    static int64_t sumAngErr = 0;
+
+    static int     currVelErr = 0;
+    static int     lastVelErr = 0;
+    static int64_t sumVelErr = 0;
+
+    static int reset = 1;
 
     if (!motors_on) {
         killMotors();
-        lastErr = 0;
-        errSum = 0;
+        lastAngErr = 0;
+        sumAngErr = 0;
+        lastVelErr = 0;
+        sumVelErr = 0;
+        av_pwm = 0;
+        reset = 1;
         return;
     }
 
-    currErr = (goalHeading - currHeading);
-    while (currErr < -2880) currErr += 5760;
-    while (currErr > 2880) currErr -= 5760;
+    currAngErr = (goalHeading - currHeading);
+    while (currAngErr < -2880) currAngErr += 5760;
+    while (currAngErr > +2880) currAngErr -= 5760;
+    sumAngErr += currAngErr;
 
-    errSum += currErr;
+    currVelErr = (goalTpp - currTpp);
+    sumVelErr += currVelErr;
 
-    int64_t adj = ((int64_t)currErr * kp + (int64_t)(currErr - lastErr) * kd + ((errSum * ki) >> 6)) >> 5;
+    int64_t angle_adj = ((int64_t)currAngErr * kpA + (int64_t)(currAngErr - lastAngErr) * kdA + ((sumAngErr * kiA) >> 6)) >> 5;
+    int64_t speed_adj = ((int64_t)currVelErr * kpV + (int64_t)(currVelErr - lastVelErr) * kdV + ((sumAngErr * kiV) >> 6)) >> 5;
 
-    fprintf(usartStream_Ptr, "[c] %d %d %d\n", currErr, pwm_ramp, (int)adj);
+    av_pwm += speed_adj;
 
-    setLeftMotorPower(pwm_ramp + (int)adj);
-    setRightMotorPower(pwm_ramp - (int)adj);
+    fprintf(usartStream_Ptr, "[c] %d %d\n", currVelErr, (int)speed_adj);
 
-    lastErr = currErr;
+    setLeftMotorPower(av_pwm + (int)angle_adj);
+    setRightMotorPower(av_pwm - (int)angle_adj);
+
+    lastAngErr = currAngErr;
+    lastVelErr = currVelErr;
+    reset = 0;
 }
 
 // Turns motors off
