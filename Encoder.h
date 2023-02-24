@@ -25,4 +25,4 @@ void encoderInit();
 void getEncoderDistances(uint64_t * encoderDistances);
 
 // Gets the average number of ticks for the pair of encoders (used for PID of speed)
-void getAverageEncoderTicks(uint64_t * avEncoderTicks);
+void getAverageEncoderTicks(int64_t * avEncoderTicks);

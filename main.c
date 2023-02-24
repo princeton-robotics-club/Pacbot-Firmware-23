@@ -34,11 +34,14 @@ volatile uint16_t goalHeading = 0;
 volatile uint8_t g_s_distResult[8] = {0};
 
 // Encoder data
-volatile uint64_t encoderResult[2] = {0};
-volatile uint64_t currAvTicks = 0;
-volatile uint64_t lastAvTicks = 0;
-volatile uint64_t motorTpms = 0;
-volatile uint64_t goalMotorTpms = 0;
+
+#define TICK_BUFF_SIZE 50
+
+volatile int tbIdx;
+volatile int64_t tickBuf[TICK_BUFF_SIZE];
+
+volatile int8_t currTpp = 0;
+volatile int8_t goalTpp = 0;
 
 uint8_t motors_on = 0;
 
@@ -69,12 +72,13 @@ ISR(TIMER0_OVF_vect)
     }
 
     // Ask for Encoder data every 5 milliseconds (offset by 3)
-    if (!((g_s_millis-3) % 5))
+    if (!((g_s_millis+3) % 5))
     {
-        getAverageEncoderTicks(&currAvTicks);
-        //getEncoderDistances(encoderResult);
-        motorTpms = currAvTicks - lastAvTicks;
-        lastAvTicks = currAvTicks;
+        getAverageEncoderTicks(tickBuf);
+        currTpp = tickBuf[0] - tickBuf[TICK_BUFF_SIZE - 1];
+        for (int i = 0; i < TICK_BUFF_SIZE - 1; i++)
+            tickBuf[i + 1] = tickBuf[i];
+        //fprintf(usartStream_Ptr, "motorTpms: %d\n", currTpp);
     }
 
     // Ask for Distance data on every 10 milliseconds (offset by 1)
@@ -161,38 +165,38 @@ int main(void)
         {
             k_inp[index] = 0;
             index = 0;
-            k_name = k_inp[0] | 32;
+            k_name  = k_inp[0] | 32;
             k_val = strtod(k_inp+1, &k_tmp);
             
             switch (k_name) {
                 case 'p': 
-                    kp = k_val;
+                    kpA = k_val;
                     motors_on = 0;
-                    fprintf(usartStream_Ptr, "[c] kp changed to %d\n", kp);
+                    fprintf(usartStream_Ptr, "[c] kp changed to %d\n", kpV);
                     break;
                 case 'i':
-                    ki = k_val;
+                    kiA = k_val;
                     motors_on = 0;
-                    fprintf(usartStream_Ptr, "[c] ki changed to %d\n", ki);
+                    fprintf(usartStream_Ptr, "[c] ki changed to %d\n", kiV);
                     break;
                 case 'd':
-                    kd = k_val;
+                    kdA = k_val;
                     motors_on = 0;
-                    fprintf(usartStream_Ptr, "[c] kd changed to %d\n", kd);
+                    fprintf(usartStream_Ptr, "[c] kd changed to %d\n", kdV);
                     break;
                 case 'm':
-                    pwm_ramp = k_val;
+                    goalTpp = k_val;
                     motors_on = 1;
-                    fprintf(usartStream_Ptr, "[c] motor set speed changed to %d\n[c] activated motors\n", pwm_ramp);
+                    fprintf(usartStream_Ptr, "[c] motor set speed changed to %d\n[c] activated motors\n", goalTpp);
                     break;
                 case 'r':
                     goalHeading = currHeading + (k_val << 4);
                     fprintf(usartStream_Ptr, "[c] new goal angle set\n[c] activated motors\n");
                     motors_on = 1;
-                    av_pwm = 0;
+                    goalTpp = 0;
                     break;
                 case '?':
-                    fprintf(usartStream_Ptr, "[c] kp = %d, ki = %d, kd = %d, 12-bit pwm = %d", kp, ki, kd, av_pwm);
+                    fprintf(usartStream_Ptr, "[c] kp = %d, ki = %d, kd = %d, 12-bit pwm = %d", kpV, kiV, kdV, goalTpp);
                     motors_on = 0;
                     break;
                 default:
