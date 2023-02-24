@@ -17,7 +17,7 @@ extern int kdV;
 
 extern volatile uint16_t currHeading;
 extern volatile uint16_t goalHeading;
-extern volatile int8_t currTpp;
-extern volatile int8_t goalTpp;
+extern volatile int16_t currTpp;
+extern volatile int16_t goalTpp;
 
 extern int av_pwm;

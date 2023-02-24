@@ -16,9 +16,9 @@ int kpA = KPA;
 int kiA = KIA;
 int kdA = KDA;
 
-#define KPV 60
+#define KPV 8
 #define KIV 0
-#define KDV 700
+#define KDV 5
 int kpV = KPV;
 int kiV = KIV;
 int kdV = KDV;
@@ -56,9 +56,10 @@ void pidStraightLine(uint8_t motors_on) {
 
     currVelErr = (goalTpp - currTpp);
     sumVelErr += currVelErr;
+    sumVelErr = 0;
 
     int64_t angle_adj = ((int64_t)currAngErr * kpA + (int64_t)(currAngErr - lastAngErr) * kdA + ((sumAngErr * kiA) >> 6)) >> 5;
-    int64_t speed_adj = ((int64_t)currVelErr * kpV + (int64_t)(currVelErr - lastVelErr) * kdV + ((sumAngErr * kiV) >> 6)) >> 5;
+    int64_t speed_adj = ((int64_t)currVelErr * kpV + (int64_t)(currVelErr - lastVelErr) * kdV + ((sumVelErr * kiV) >> 6)) >> 5;
 
     av_pwm += speed_adj;
 

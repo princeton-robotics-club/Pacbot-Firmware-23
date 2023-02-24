@@ -35,13 +35,13 @@ volatile uint8_t g_s_distResult[8] = {0};
 
 // Encoder data
 
-#define TICK_BUFF_SIZE 50
+#define TICK_BUFF_SIZE 10
 
 volatile int tbIdx;
 volatile int64_t tickBuf[TICK_BUFF_SIZE];
 
-volatile int8_t currTpp = 0;
-volatile int8_t goalTpp = 0;
+volatile int16_t currTpp = 0;
+volatile int16_t goalTpp = 0;
 
 uint8_t motors_on = 0;
 
@@ -76,9 +76,9 @@ ISR(TIMER0_OVF_vect)
     {
         getAverageEncoderTicks(tickBuf);
         currTpp = tickBuf[0] - tickBuf[TICK_BUFF_SIZE - 1];
-        for (int i = 0; i < TICK_BUFF_SIZE - 1; i++)
+        for (int i = TICK_BUFF_SIZE - 2; i >= 0; i--)
             tickBuf[i + 1] = tickBuf[i];
-        //fprintf(usartStream_Ptr, "motorTpms: %d\n", currTpp);
+        fprintf(usartStream_Ptr, "motorTpms: %ul\n", currTpp);
     }
 
     // Ask for Distance data on every 10 milliseconds (offset by 1)
