@@ -56,7 +56,6 @@ void pidStraightLine(uint8_t motors_on) {
 
     currVelErr = (goalTpp - currTpp);
     sumVelErr += currVelErr;
-    sumVelErr = 0;
 
     int64_t angle_adj = ((int64_t)currAngErr * kpA + (int64_t)(currAngErr - lastAngErr) * kdA + ((sumAngErr * kiA) >> 6)) >> 5;
     int64_t speed_adj = ((int64_t)currVelErr * kpV + (int64_t)(currVelErr - lastVelErr) * kdV + ((sumVelErr * kiV) >> 6)) >> 5;

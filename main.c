@@ -78,7 +78,7 @@ ISR(TIMER0_OVF_vect)
         currTpp = tickBuf[0] - tickBuf[TICK_BUFF_SIZE - 1];
         for (int i = TICK_BUFF_SIZE - 2; i >= 0; i--)
             tickBuf[i + 1] = tickBuf[i];
-        fprintf(usartStream_Ptr, "motorTpms: %ul\n", currTpp);
+        fprintf(usartStream_Ptr, "motorTpms: %d\n", currTpp);
     }
 
     // Ask for Distance data on every 10 milliseconds (offset by 1)
