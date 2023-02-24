@@ -1,7 +1,9 @@
+#include "BNO055.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "Control.h"
 #include "UsartAsFile.h"
+
 
 /*
 #define KP 28.5
@@ -25,6 +27,15 @@ int kdV = KDV;
 
 int av_pwm = 0;
 
+static volatile uint16_t goalHeading = 0;
+
+uint8_t motors_on = 0;
+
+void setGoalHeading(uint16_t newG)
+{
+    goalHeading = newG;
+}
+
 // Returns a new pwm setting given target speed and current speed
 void pidStraightLine(uint8_t motors_on) {
 
@@ -46,10 +57,11 @@ void pidStraightLine(uint8_t motors_on) {
         sumVelErr = 0;
         av_pwm = 0;
         reset = 1;
+        goalHeading = bno055GetCurrHeading();
         return;
     }
 
-    currAngErr = (goalHeading - currHeading);
+    currAngErr = (goalHeading - bno055GetCurrHeading());
     while (currAngErr < -2880) currAngErr += 5760;
     while (currAngErr > +2880) currAngErr -= 5760;
     sumAngErr += currAngErr;

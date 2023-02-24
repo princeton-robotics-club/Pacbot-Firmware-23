@@ -1,13 +1,7 @@
-/*
- * BNO055.h
- *
- * Created: 8/28/2022 7:26:33 PM
- *  Author: jack2
- */ 
-
-
 #ifndef BNO055_H_
 #define BNO055_H_
+
+#include "I2CInstruction.h"
 
 // Change to 0x29 if using 0x29 as the address
 #define BNO055_I2C_ADDR                     (0x28)
@@ -52,7 +46,9 @@ I2CInstruction_ID bno055GetAllEuler(uint8_t * out);
 /* Converts an euler angle uint8_t pair into a float */
 void fusionRawToFormatted(uint8_t  * raw, double * formatted);
 
+int bno055Task(void);
 
+uint16_t bno055GetCurrHeading(void);
 
 
 /* REGISTER ADDRESS DEFINITION  */

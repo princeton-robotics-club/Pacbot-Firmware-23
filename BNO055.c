@@ -1,9 +1,3 @@
-/*
- * BNO055.c
- *
- * Created: 8/28/2022 7:24:16 PM
- *  Author: jack2
- */ 
 
 // Custom includes
 #include "I2CInstruction.h"
@@ -14,6 +8,17 @@
 // Other includes
 #include <util/delay.h>
 #include <stdint.h>
+
+// Heading data (integer from 0 to 5760)
+static volatile uint8_t headingArr[2] = {0};
+
+uint16_t bno055GetCurrHeading(void)
+{
+    static uint16_t currHeading = 0;
+
+    currHeading = (headingArr[0] | ((uint16_t)(headingArr[1]) << 8));
+    return currHeading;
+}
 
 /* Sends the instructions to the IMU to enter NDOF fusion mode
  * Returns an I2CInstruction ID for the final instruction sent */
@@ -116,6 +121,11 @@ I2CInstruction_ID bno055MultiRegRead(uint8_t * out,
         timeOutCounter++;
     }
     return ret;
+}
+
+int bno055Task(void)
+{
+    return bno055GetHeading((uint8_t *)headingArr);
 }
 
 /* Converts an euler angle uint8_t pair into a float */

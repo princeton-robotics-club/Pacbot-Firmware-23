@@ -1,3 +1,7 @@
+#ifndef _USART_H_
+#define _USART_H_
+
+// Includes
 #include <stdio.h>
 #include "Defines.h"
 
@@ -19,3 +23,5 @@ size_t getReceiveBufSize();
 
 /* Used for USART output with stdio functions */
 extern FILE * usartStream_Ptr;
+
+#endif//_USART_H_

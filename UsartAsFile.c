@@ -1,8 +1,11 @@
+// Library Includes
 #include <util/atomic.h>
 #include <avr/io.h>
 #include <stdio.h>
 #include <avr/interrupt.h>
 #include <string.h>
+
+// Custom Includes
 #include "UsartAsFile.h"
 
 #define MAX_USART_BUFFER_SIZE 256

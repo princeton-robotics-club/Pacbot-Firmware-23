@@ -1,9 +1,3 @@
-/*
- * I2CInstruction.c
- *
- * Created: 5/26/2022 9:21:20 PM
- *  Author: Jack2bs
- */ 
 
 // Other includes
 #include <util/atomic.h>
@@ -17,6 +11,7 @@
 #include "I2CDriver.h"
 #include "UsartAsFile.h"
 
+// Store the maximum size in memory
 const static uint16_t g_s_I2CMaxBufSize = I2C_MAX_BUFFER_SIZE; 
 
 /* Abstract data types (not visible outside of this file) */

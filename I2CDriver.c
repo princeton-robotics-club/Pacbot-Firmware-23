@@ -1,9 +1,3 @@
-/*
- * I2C.c
- *
- * Created: 5/26/2022 4:28:11 PM
- *  Author: Jack2bs
- */ 
 
 // Other includes
 #include <avr/interrupt.h>

@@ -1,5 +1,8 @@
+// Custom Includes
 #include "Defines.h"
 #include "ShiftReg.h"
+
+// Library Includes
 #include <util/delay.h>
 #include <avr/io.h>
 

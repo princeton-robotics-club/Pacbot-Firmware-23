@@ -1,3 +1,6 @@
+#ifndef _MOTOR_H_
+#define _MOTOR_H_
+
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
@@ -35,3 +38,5 @@ int getLeftMotorPower();
 int getLeftMotorDir();
 int getRightMotorPower();
 int getRightMotorDir();
+
+#endif//_MOTOR_H_

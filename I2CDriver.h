@@ -1,11 +1,3 @@
-/*
- * I2C.h
- *
- * Created: 5/26/2022 4:28:23 PM
- *  Author: Jack2bs
- */ 
-
-
 #ifndef I2C_DRIVER_H_
 #define I2C_DRIVER_H_
 
@@ -13,6 +5,7 @@
 
 #include "I2CInstruction.h"
 
+#include "UsartAsFile.h"
 
 // TWCR Macros
 

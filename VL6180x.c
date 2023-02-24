@@ -1,9 +1,22 @@
-#include "VL6180x.h"
+// Library Includes
 #include <stdio.h>
-#include "ShiftReg.h"
 #include <avr/pgmspace.h>
 
+// Custom Includes
+#include "VL6180x.h"
+#include "ShiftReg.h"
 #include "UsartAsFile.h"
+
+// Store the start address in memory
+const static uint8_t g_s_startAddress = START_ADDRESS;
+
+// Distance sensor data
+volatile static uint8_t g_s_distResult[8] = {0};
+/* Returns the current distance value for sensor */
+uint8_t VL6180xGetDist(distSensID sensor)
+{
+    return g_s_distResult[sensor];
+}
 
 // These are registers that I want to change at initialization
 const uint8_t VL6180XCustomInitData[NUM_PUBLIC_REGS][3] =
@@ -137,7 +150,7 @@ void VL6180xInitSensor(int devAddress)
 
 /* This function initializes all of the VL6180x sensors with all of the required
  * and user data */
-void VL6180xInit(int startAddress)
+void VL6180xInit()
 {
     // Disable all of the sensors
     srClrData();
@@ -151,12 +164,9 @@ void VL6180xInit(int startAddress)
     for (int i = 0; i < 8; i++)
     {
         srShift();
-        VL6180xInitSensor(startAddress + i);
-
+        VL6180xInitSensor(g_s_startAddress + i);
     }
-    
 }
-
 
 /* Adds the instructions to the I2C bus to perform a read from a
  * VL6180x distance sensor */
@@ -183,4 +193,17 @@ I2CInstruction_ID VL6180xAddRead(int devAddress, uint8_t * result)
         timeOutCounter++;
     }
     return ret;
+}
+
+/* Adds a read to the I2CBuffer for each distance sensor */
+I2CInstruction_ID VL6180xTask(void)
+{
+    VL6180xAddRead(START_ADDRESS + FRONT_LEFT, (uint8_t *) &g_s_distResult[0]);
+    VL6180xAddRead(START_ADDRESS + FRONT_RIGHT, (uint8_t *) &g_s_distResult[1]);
+    VL6180xAddRead(START_ADDRESS + RIGHT_FRONT, (uint8_t *) &g_s_distResult[2]);
+    VL6180xAddRead(START_ADDRESS + RIGHT_BACK, (uint8_t *) &g_s_distResult[3]);
+    VL6180xAddRead(START_ADDRESS + BACK_RIGHT, (uint8_t *) &g_s_distResult[4]);
+    VL6180xAddRead(START_ADDRESS + BACK_LEFT, (uint8_t *) &g_s_distResult[5]);
+    VL6180xAddRead(START_ADDRESS + LEFT_BACK, (uint8_t *) &g_s_distResult[6]);
+    return VL6180xAddRead(START_ADDRESS + LEFT_FRONT, (uint8_t *) &g_s_distResult[7]);
 }

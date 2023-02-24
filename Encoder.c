@@ -1,12 +1,15 @@
+// Library Includes
 #include <avr/io.h>
 #include <avr/interrupt.h>
+
+// Custom Includes
 #include "Encoder.h"
 
-#define DEVBOARD
+//#define DEVBOARD
 
 // Encoder-specific variables
-int priorPins, currPins;
-uint64_t totalTicksLeft, totalTicksRight;
+static int priorPins, currPins;
+static uint64_t totalTicksLeft, totalTicksRight;
 
 // Called during every pin change interrupt (ISR = Interrupt Service Routine)
 ISR(PCINT0_vect) {
@@ -28,11 +31,11 @@ ISR(PCINT0_vect) {
     // Update for the next interrupt
     priorPins = currPins;
 
-    #ifdef DEVBOARD
+#ifdef DEVBOARD
     // Gives visual feedback LED to confirm encoder is moving (for dev boards, NOT the robot)
     PORTC ^= (1 << PC6);
     PORTC &= ~(1 << PC7);
-    #endif
+#endif
 }
 
 void getEncoderDistances(uint64_t * encoderDistances) {

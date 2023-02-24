@@ -1,3 +1,6 @@
+#ifndef _ENCODER_H_
+#define _ENCODER_H_
+
 #include <avr/interrupt.h>
 #include <avr/io.h>
 
@@ -26,3 +29,5 @@ void getEncoderDistances(uint64_t * encoderDistances);
 
 // Gets the average number of ticks for the pair of encoders (used for PID of speed)
 void getAverageEncoderTicks(int64_t * avEncoderTicks);
+
+#endif//_ENCODER_H_

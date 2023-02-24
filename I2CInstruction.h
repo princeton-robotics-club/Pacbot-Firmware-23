@@ -1,18 +1,10 @@
-/*
- * I2CInstruction.h
- *
- * Created: 7/19/2022 1:51:07 AM
- *  Author: jack2
- */ 
-
-
 #ifndef I2CINSTRUCTION_H_
 #define I2CINSTRUCTION_H_
 
 #include <string.h>
 #include <stdio.h>
 
-#define I2C_MAX_BUFFER_SIZE     6
+#define I2C_MAX_BUFFER_SIZE     64
 
 #define I2C_WRITE   0
 #define I2C_READ    1

@@ -22,17 +22,20 @@ resolution for the duty cycle, and a PWM frequency of roughly 16MHz / 4096
 
 */
 
+// Library Includes
 #include <avr/io.h>
 #include <avr/interrupt.h>
+
+// Custom Includes
 #include "Motor.h"
 
-int leftMotorDir = DIR_FW;
-int rightMotorDir = DIR_FW;
+static int leftMotorDir = DIR_FW;
+static int rightMotorDir = DIR_FW;
 
-volatile int leftMotorPwmPort = M22;
-volatile int leftMotorConstPort = M21;
-volatile int rightMotorPwmPort = M11;
-volatile int rightMotorConstPort = M12;
+static volatile int leftMotorPwmPort = M22;
+static volatile int leftMotorConstPort = M21;
+static volatile int rightMotorPwmPort = M11;
+static volatile int rightMotorConstPort = M12;
 
 // Triggers during comparison match for left motor (turns off motor 2)
 ISR(TIMER1_COMPB_vect) {
