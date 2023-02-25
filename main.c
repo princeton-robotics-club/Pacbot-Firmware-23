@@ -34,8 +34,19 @@ volatile int16_t goalTpp = 0;
 /* Add anything you want to print every 50ms */
 void debug_print(void)
 {
-    //fprintf(usartStream_Ptr, "Fr_R: %d\n", VL6180xGetDist(FRONT_RIGHT));
-    return;
+    fprintf(usartStream_Ptr, "Dist:   %d, %d, %d, %d\n", 
+    VL6180xGetDist(FRONT_LEFT),
+    VL6180xGetDist(FRONT_RIGHT),
+    VL6180xGetDist(BACK_RIGHT),
+    VL6180xGetDist(BACK_LEFT),
+    );
+
+    // fprintf(usartStream_Ptr, "Status: %d, %d, %d, %d\n",
+    // VL6180xGetDistStatus(LEFT_FRONT),
+    // VL6180xGetDistStatus(LEFT_BACK),
+    // VL6180xGetDistStatus(BACK_RIGHT),
+    // VL6180xGetDistStatus(BACK_LEFT));
+    // return;
 }
 
 
@@ -89,7 +100,7 @@ void millisTask(void)
     }
 
     // DEBUG PRINT EVERY 50 ms
-    if (!(g_s_millis % 50))
+    if (!(g_s_millis % 10))
     {
         debug_print();
     }

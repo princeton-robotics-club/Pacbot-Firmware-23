@@ -25,6 +25,8 @@ typedef enum dsID distSensID;
 
 /* Returns the current distance value for sensor */
 uint8_t VL6180xGetDist(distSensID sensor);
+uint8_t VL6180xGetDistStatus(distSensID sensor);
+
 
 /* This function initializes a VL6180x sensor with all of the required
  * and user data */
