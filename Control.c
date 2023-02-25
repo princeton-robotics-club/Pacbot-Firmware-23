@@ -18,9 +18,9 @@ int kpA = KPA;
 int kiA = KIA;
 int kdA = KDA;
 
-#define KPV 8
+#define KPV 80
 #define KIV 0
-#define KDV 5
+#define KDV 80
 int kpV = KPV;
 int kiV = KIV;
 int kdV = KDV;
@@ -29,6 +29,7 @@ int av_pwm = 0;
 
 static volatile uint16_t goalHeading = 0;
 
+/* PUT THIS BEHIND GETTERS AND SETTERS AT SOME POINT? */
 uint8_t motors_on = 0;
 
 void setGoalHeading(uint16_t newG)
@@ -37,17 +38,17 @@ void setGoalHeading(uint16_t newG)
 }
 
 // Returns a new pwm setting given target speed and current speed
-void pidStraightLine(uint8_t motors_on) {
+void pidStraightLine() {
 
-    static int     currAngErr = 0;
+    int     currAngErr = 0;
     static int     lastAngErr = 0;
     static int64_t sumAngErr = 0;
 
-    static int     currVelErr = 0;
+    int     currVelErr = 0;
     static int     lastVelErr = 0;
     static int64_t sumVelErr = 0;
 
-    static int reset = 1;
+    // static int8_t reset = 1;
 
     if (!motors_on) {
         killMotors();
@@ -56,7 +57,7 @@ void pidStraightLine(uint8_t motors_on) {
         lastVelErr = 0;
         sumVelErr = 0;
         av_pwm = 0;
-        reset = 1;
+        // reset = 1;
         goalHeading = bno055GetCurrHeading();
         return;
     }
@@ -81,7 +82,7 @@ void pidStraightLine(uint8_t motors_on) {
 
     lastAngErr = currAngErr;
     lastVelErr = currVelErr;
-    reset = 0;
+    // reset = 0;
 }
 
 // Turns motors off

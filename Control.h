@@ -7,7 +7,7 @@
 
 #include "Motor.h"
 
-void pidStraightLine(uint8_t motors_on);
+void pidStraightLine();
 void killMotors();
 void setGoalHeading(uint16_t newG);
 

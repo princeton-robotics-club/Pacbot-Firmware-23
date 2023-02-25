@@ -8,8 +8,8 @@
 //#define DEVBOARD
 
 // Encoder-specific variables
-static int priorPins, currPins;
-static uint64_t totalTicksLeft, totalTicksRight;
+static uint8_t priorPins, currPins;
+static int32_t totalTicksLeft, totalTicksRight;
 
 // Called during every pin change interrupt (ISR = Interrupt Service Routine)
 ISR(PCINT0_vect) {
@@ -45,7 +45,7 @@ void getEncoderDistances(uint64_t * encoderDistances) {
     encoderDistances[1] = totalTicksRight * ENCODER_NM_PER_TICK;
 }
 
-void getAverageEncoderTicks(int64_t * avEncoderTicks) {
+void getAverageEncoderTicks(int32_t * avEncoderTicks) {
     
     *avEncoderTicks = (totalTicksLeft + totalTicksRight) >> 1;
 }

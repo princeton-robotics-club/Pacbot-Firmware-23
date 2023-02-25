@@ -198,12 +198,12 @@ I2CInstruction_ID VL6180xAddRead(int devAddress, uint8_t * result)
 /* Adds a read to the I2CBuffer for each distance sensor */
 I2CInstruction_ID VL6180xTask(void)
 {
-    VL6180xAddRead(START_ADDRESS + FRONT_LEFT, (uint8_t *) &g_s_distResult[0]);
-    VL6180xAddRead(START_ADDRESS + FRONT_RIGHT, (uint8_t *) &g_s_distResult[1]);
-    VL6180xAddRead(START_ADDRESS + RIGHT_FRONT, (uint8_t *) &g_s_distResult[2]);
-    VL6180xAddRead(START_ADDRESS + RIGHT_BACK, (uint8_t *) &g_s_distResult[3]);
-    VL6180xAddRead(START_ADDRESS + BACK_RIGHT, (uint8_t *) &g_s_distResult[4]);
-    VL6180xAddRead(START_ADDRESS + BACK_LEFT, (uint8_t *) &g_s_distResult[5]);
-    VL6180xAddRead(START_ADDRESS + LEFT_BACK, (uint8_t *) &g_s_distResult[6]);
-    return VL6180xAddRead(START_ADDRESS + LEFT_FRONT, (uint8_t *) &g_s_distResult[7]);
+    VL6180xAddRead(START_ADDRESS + FRONT_LEFT, (uint8_t *) &g_s_distResult[FRONT_LEFT]);
+    VL6180xAddRead(START_ADDRESS + FRONT_RIGHT, (uint8_t *) &g_s_distResult[FRONT_RIGHT]);
+    VL6180xAddRead(START_ADDRESS + RIGHT_FRONT, (uint8_t *) &g_s_distResult[RIGHT_FRONT]);
+    VL6180xAddRead(START_ADDRESS + RIGHT_BACK, (uint8_t *) &g_s_distResult[RIGHT_BACK]);
+    VL6180xAddRead(START_ADDRESS + BACK_RIGHT, (uint8_t *) &g_s_distResult[BACK_RIGHT]);
+    VL6180xAddRead(START_ADDRESS + BACK_LEFT, (uint8_t *) &g_s_distResult[BACK_LEFT]);
+    VL6180xAddRead(START_ADDRESS + LEFT_BACK, (uint8_t *) &g_s_distResult[LEFT_BACK]);
+    return VL6180xAddRead(START_ADDRESS + LEFT_FRONT, (uint8_t *) &g_s_distResult[LEFT_FRONT]);
 }

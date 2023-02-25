@@ -11,11 +11,12 @@
 void debug_comms_task(void)
 {
     static char k_inp[15];
-    static char k_name = 0;
-    static int k_val = 0;
-    static char * k_tmp;
-    static int read_rdy = 0;
     static int myindex = 0;
+
+    char k_name = 0;
+    int k_val = 0;
+    int read_rdy = 0;
+    //char * k_tmp;
 
     // Print the sensor data
     // fprintf(usartStream_Ptr, "%d\n", currHeading);
@@ -40,21 +41,21 @@ void debug_comms_task(void)
         k_inp[myindex] = 0;
         myindex = 0;
         k_name  = k_inp[0] | 32;
-        k_val = strtod(k_inp+1, &k_tmp);
+        k_val = strtod(k_inp+1, NULL);
         
         switch (k_name) {
             case 'p': 
-                kpA = k_val;
+                kpV = k_val;
                 motors_on = 0;
                 fprintf(usartStream_Ptr, "[c] kp changed to %d\n", kpV);
                 break;
             case 'i':
-                kiA = k_val;
+                kiV = k_val;
                 motors_on = 0;
                 fprintf(usartStream_Ptr, "[c] ki changed to %d\n", kiV);
                 break;
             case 'd':
-                kdA = k_val;
+                kdV = k_val;
                 motors_on = 0;
                 fprintf(usartStream_Ptr, "[c] kd changed to %d\n", kdV);
                 break;
@@ -79,6 +80,5 @@ void debug_comms_task(void)
         }
         DDRE |= (1 << PE6);
         PORTE |= (1 << PE6);
-        read_rdy = 0;
     }
 }

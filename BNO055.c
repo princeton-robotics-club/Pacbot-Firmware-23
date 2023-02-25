@@ -14,7 +14,7 @@ static volatile uint8_t headingArr[2] = {0};
 
 uint16_t bno055GetCurrHeading(void)
 {
-    static uint16_t currHeading = 0;
+    uint16_t currHeading = 0;
 
     currHeading = (headingArr[0] | ((uint16_t)(headingArr[1]) << 8));
     return currHeading;

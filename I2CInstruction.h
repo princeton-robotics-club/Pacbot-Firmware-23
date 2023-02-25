@@ -42,7 +42,7 @@ I2CInstruction_ID I2CBufferGetCurrentInstructionID();
  * length = leng
  * nextInstr = NULL
  * Sets global interrupt enable */
-I2CInstruction_ID I2CBufferAddInstruction(int d_add, int rw, uint8_t* dat, int leng);
+I2CInstruction_ID I2CBufferAddInstruction(int8_t d_add, int8_t rw, uint8_t* dat, int8_t leng);
 
 /* Returns the I2CBuffer's current size */
 size_t I2CBufferGetCurrentSize();

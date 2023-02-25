@@ -22,10 +22,10 @@
 #include <string.h>
 
 
-#define TICK_BUFF_SIZE 10
+#define TICK_BUFF_SIZE 4
 
-volatile int tbIdx;
-volatile int64_t tickBuf[TICK_BUFF_SIZE];
+// volatile int tbIdx;
+volatile int32_t tickBuf[TICK_BUFF_SIZE];
 
 volatile int16_t currTpp = 0;
 volatile int16_t goalTpp = 0;
@@ -39,7 +39,7 @@ void debug_print(void)
 
 
 // Milliseconds since initialization
-volatile static unsigned long g_s_millis = 0;
+volatile static uint32_t g_s_millis = 0;
 volatile static int8_t g_s_milliFlag = 0;
 
 void millisTask(void)
@@ -67,13 +67,13 @@ void millisTask(void)
     // Run PID every 10 milliseconds (offset by 2)
     if (!((g_s_millis+2) % 10))
     {
-        pidStraightLine(motors_on);
+        pidStraightLine();
     }
 
     // Ask for Encoder data every 5 milliseconds (offset by 3)
     if (!((g_s_millis+3) % 5))
     {
-        getAverageEncoderTicks((int64_t *) tickBuf);
+        getAverageEncoderTicks((int32_t *) tickBuf);
         currTpp = tickBuf[0] - tickBuf[TICK_BUFF_SIZE - 1];
         for (int i = TICK_BUFF_SIZE - 2; i >= 0; i--)
             tickBuf[i + 1] = tickBuf[i];

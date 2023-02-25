@@ -12,17 +12,17 @@
 #include "UsartAsFile.h"
 
 // Store the maximum size in memory
-const static uint16_t g_s_I2CMaxBufSize = I2C_MAX_BUFFER_SIZE; 
+const static uint8_t g_s_I2CMaxBufSize = I2C_MAX_BUFFER_SIZE;
 
 /* Abstract data types (not visible outside of this file) */
 typedef struct I2CInstruction
 {
-    int dev_addr;
-    int readWrite;
+    int8_t dev_addr;
+    int8_t readWrite;
     uint8_t* data;
-    int length;
+    int8_t length;
     I2CInstruction_ID instrID;
-    
+
 } * I2CInstruction_pT;
 
 typedef struct I2CBuffer
@@ -247,7 +247,7 @@ I2CInstruction_ID I2CBufferGetCurrentInstructionID()
  * length = leng
  * nextInstr = NULL
  * Sets global interrupt enable */
-I2CInstruction_ID I2CBufferAddInstruction(int d_add, int rw, uint8_t* dat, int leng)
+I2CInstruction_ID I2CBufferAddInstruction(int8_t d_add, int8_t rw, uint8_t* dat, int8_t leng)
 {
     static I2CInstruction_ID g_s_instrIDAssigner = 1;
 
