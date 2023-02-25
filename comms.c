@@ -2,11 +2,58 @@
 #include "BNO055.h"
 #include "UsartAsFile.h"
 #include "Control.h"
+#include "comms.h"
 
 // Library Includes
 #include <avr/io.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+typedef struct Command
+{
+    uint8_t commType;
+    uint8_t commData;
+    uint32_t commNum;
+} PacbCommand;
+
+static volatile PacbCommand g_s_commandBuf[2];
+
+uint8_t gameState = GS_ON;
+volatile uint32_t g_lastCommandSent;
+
+/* This function uses fputc(char, usartStream_Ptr) to send the
+ * following messages to the offboard computer 
+ * '|' g_lastCommandSent[3:0] '\n' */
+// Should have six calls to function fputc
+void commsSendTask(void)
+{
+    return;
+}
+
+/* First, this function checks the number of received bytes using
+ * getReceiveBufSize(). If the return value >= 8 then this function
+ * uses fgetc(usartStream_Ptr) to read in the following messasge from
+ * the offboard computer
+ * '|' commandNumber[3:0] gameState Action '\n''
+ * Fill gameState with gameState 
+ * If g_s_commandBuf[0].commNum = 0 fill g_s_commandBuf[0] with Action
+ * Otherwise fill g_s_commandBuf[1] with Action 
+ * in the buffer, commType is the highest order bit of Action, commData
+ * if the other 7 bits. */
+// Should have 8 calls to fputc
+void commsReceiveTask(void)
+{
+    return;
+}
+
+void commsTask(void)
+{
+    commsReceiveTask();
+    commsSendTask();
+    return;
+}
+
+
 
 void debug_comms_task(void)
 {
