@@ -3,6 +3,7 @@
 #include <avr/interrupt.h>
 #include "Control.h"
 #include "UsartAsFile.h"
+#include "VL6180x.h"
 
 
 /*
@@ -24,6 +25,13 @@ int kdA = KDA;
 int kpV = KPV;
 int kiV = KIV;
 int kdV = KDV;
+
+#define KPW 0
+#define KIW 0
+#define KDW 0
+int kpW = KPW;
+int kiW = KIW;
+int kdW = KDW;
 
 int av_pwm = 0;
 
@@ -48,6 +56,10 @@ void pidStraightLine() {
     static int     lastVelErr = 0;
     static int64_t sumVelErr = 0;
 
+    int     currWallErr = 0;
+    static int lastWallErr = 0;
+    static int64_t sumWallErr = 0;
+
     // static int8_t reset = 1;
 
     if (!motors_on) {
@@ -70,18 +82,34 @@ void pidStraightLine() {
     currVelErr = (goalTpp - currTpp);
     sumVelErr += currVelErr;
 
+
     int64_t angle_adj = ((int64_t)currAngErr * kpA + (int64_t)(currAngErr - lastAngErr) * kdA + ((sumAngErr * kiA) >> 6)) >> 5;
     int64_t speed_adj = ((int64_t)currVelErr * kpV + (int64_t)(currVelErr - lastVelErr) * kdV + ((sumVelErr * kiV) >> 6)) >> 5;
 
+    int fr, ba;
+    if ((fr = VL6180xGetDist(RIGHT_FRONT)) < 100 && ((ba = VL6180xGetDist(RIGHT_BACK)) < 100 ))
+    {
+        currWallErr = ba - fr;
+    }
+    else if ((fr = VL6180xGetDist(LEFT_FRONT)) < 100 && ((ba =  VL6180xGetDist(LEFT_BACK)) < 100))
+    {
+        currWallErr = fr - ba;
+    }
+    sumWallErr += currWallErr;
+    int64_t wall_adj = ((int64_t)currWallErr * kpW + (int64_t)(currWallErr - lastWallErr) * kdW + ((sumWallErr * kiW) >> 6)) >> 5;
+    
+
+
     av_pwm += speed_adj;
 
-    fprintf(usartStream_Ptr, "[c] %d %d\n", currVelErr, (int)speed_adj);
+    fprintf(usartStream_Ptr, "[c] %d %d\n", currWallErr, wall_adj);
 
-    setLeftMotorPower(av_pwm + (int)angle_adj);
-    setRightMotorPower(av_pwm - (int)angle_adj);
+    setLeftMotorPower(av_pwm + (int)angle_adj + (int) wall_adj);
+    setRightMotorPower(av_pwm - (int)angle_adj  - (int) wall_adj);
 
     lastAngErr = currAngErr;
     lastVelErr = currVelErr;
+    lastWallErr = currWallErr;
     // reset = 0;
 }
 
