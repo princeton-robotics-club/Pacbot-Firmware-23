@@ -92,19 +92,19 @@ void debug_comms_task(void)
         
         switch (k_name) {
             case 'p': 
-                kpV = k_val;
+                kpW = k_val;
                 motors_on = 0;
-                fprintf(usartStream_Ptr, "[c] kp changed to %d\n", kpV);
+                fprintf(usartStream_Ptr, "[c] kp changed to %d\n", kpW);
                 break;
             case 'i':
-                kiV = k_val;
+                kiW = k_val;
                 motors_on = 0;
-                fprintf(usartStream_Ptr, "[c] ki changed to %d\n", kiV);
+                fprintf(usartStream_Ptr, "[c] ki changed to %d\n", kiW);
                 break;
             case 'd':
-                kdV = k_val;
+                kdW = k_val;
                 motors_on = 0;
-                fprintf(usartStream_Ptr, "[c] kd changed to %d\n", kdV);
+                fprintf(usartStream_Ptr, "[c] kd changed to %d\n", kdW);
                 break;
             case 'm':
                 goalTpp = k_val;
@@ -118,7 +118,7 @@ void debug_comms_task(void)
                 goalTpp = 0;
                 break;
             case '?':
-                fprintf(usartStream_Ptr, "[c] kp = %d, ki = %d, kd = %d, 12-bit pwm = %d", kpV, kiV, kdV, goalTpp);
+                fprintf(usartStream_Ptr, "[c] kp = %d, ki = %d, kd = %d, 12-bit pwm = %d", kpW, kiW, kdW, goalTpp);
                 motors_on = 0;
                 break;
             default:

@@ -19,6 +19,10 @@ extern int kpV;
 extern int kiV;
 extern int kdV;
 
+extern int kpW;
+extern int kiW;
+extern int kdW;
+
 extern volatile int16_t currTpp;
 extern volatile int16_t goalTpp;
 
