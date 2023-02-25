@@ -87,25 +87,31 @@ void pidStraightLine() {
     int64_t speed_adj = ((int64_t)currVelErr * kpV + (int64_t)(currVelErr - lastVelErr) * kdV + ((sumVelErr * kiV) >> 6)) >> 5;
 
     int fr, ba;
-    if ((fr = VL6180xGetDist(RIGHT_FRONT)) < 100 && ((ba = VL6180xGetDist(RIGHT_BACK)) < 100 ))
+    int64_t wall_adj = 0;
+    // if ((fr = VL6180xGetDist(RIGHT_FRONT)) < 100 && ((ba = VL6180xGetDist(RIGHT_BACK)) < 100 ))
+    // {
+    //     currWallErr = ba - fr;
+    // }
+    // else
+    if ((fr = VL6180xGetDist(LEFT_FRONT)) < 100 && ((ba =  VL6180xGetDist(LEFT_BACK)) < 100))
     {
         currWallErr = ba - fr;
+        sumWallErr += currWallErr;
+        wall_adj = ((int64_t)currWallErr * kpW + (int64_t)(currWallErr - lastWallErr) * kdW + ((sumWallErr * kiW) >> 6)) >> 5;
     }
-    else if ((fr = VL6180xGetDist(LEFT_FRONT)) < 100 && ((ba =  VL6180xGetDist(LEFT_BACK)) < 100))
-    {
-        currWallErr = fr - ba;
-    }
-    sumWallErr += currWallErr;
-    int64_t wall_adj = ((int64_t)currWallErr * kpW + (int64_t)(currWallErr - lastWallErr) * kdW + ((sumWallErr * kiW) >> 6)) >> 5;
     
 
 
     av_pwm += speed_adj;
+    if (goalTpp)
+    {
+        av_pwm = 2000;
+    }
 
     fprintf(usartStream_Ptr, "[c] %d %d\n", currWallErr, wall_adj);
 
-    setLeftMotorPower(av_pwm + (int)angle_adj + (int) wall_adj);
-    setRightMotorPower(av_pwm - (int)angle_adj  - (int) wall_adj);
+    setLeftMotorPower(av_pwm + (int) wall_adj);//+ (int)angle_adj);
+    setRightMotorPower(av_pwm - (int) wall_adj);// - (int)angle_adj;
 
     lastAngErr = currAngErr;
     lastVelErr = currVelErr;

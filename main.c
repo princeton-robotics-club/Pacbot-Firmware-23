@@ -78,7 +78,7 @@ void millisTask(void)
         currTpp = tickBuf[0] - tickBuf[TICK_BUFF_SIZE - 1];
         for (int i = TICK_BUFF_SIZE - 2; i >= 0; i--)
             tickBuf[i + 1] = tickBuf[i];
-        fprintf(usartStream_Ptr, "motorTpms: %d\n", currTpp);
+        //fprintf(usartStream_Ptr, "motorTpms: %d\n", currTpp);
     }
     
 
