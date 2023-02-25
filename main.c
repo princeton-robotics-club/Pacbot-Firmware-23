@@ -34,6 +34,7 @@ volatile int16_t goalTpp = 0;
 /* Add anything you want to print every 50ms */
 void debug_print(void)
 {
+    //fprintf(usartStream_Ptr, "Fr_R: %d\n", VL6180xGetDist(FRONT_RIGHT));
     return;
 }
 

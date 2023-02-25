@@ -19,7 +19,7 @@ uint8_t VL6180xGetDist(distSensID sensor)
 }
 
 // These are registers that I want to change at initialization
-const uint8_t VL6180XCustomInitData[NUM_PUBLIC_REGS][3] =
+const uint8_t VL6180XCustomInitData[NUM_PUBLIC_REGS][3] PROGMEM =
 {
     {0x00, 0x11, 0x10},     // Turns on GPIO1 as interrupting when data is available
     {0x01, 0x0a, 0x30},     // Sets how long it averages range measurements
@@ -38,7 +38,7 @@ const uint8_t VL6180XCustomInitData[NUM_PUBLIC_REGS][3] =
 };
 
 // These are all private registers that you are required to initialize to these values
-const uint8_t VL6180XRequiredInitData[NUM_PRIVATE_REGS][3] = {
+const uint8_t VL6180XRequiredInitData[NUM_PRIVATE_REGS][3] PROGMEM = {
     {0x02, 0x07, 0x01},
     {0x02, 0x08, 0x01},
     {0x00, 0x96, 0x00},
@@ -131,8 +131,13 @@ void VL6180xInitSensor(int devAddress)
     // Send all of the required data
     for (int i = 0; i < NUM_PRIVATE_REGS; i++)
     {
+        uint8_t toSend[3] = {0, 0, 0};
+        for (uint8_t j = 0; j < 3; j++)
+        {
+            toSend[j] = pgm_read_byte(&(VL6180XRequiredInitData[i][j]));
+        }
         
-        while (!I2CBufferAddInstruction(devAddress, I2C_WRITE, (uint8_t*)VL6180XRequiredInitData[i], 3))
+        while (!I2CBufferAddInstruction(devAddress, I2C_WRITE, (uint8_t*)(&toSend[0]), 3))
         {
             I2CTask();
         }
@@ -141,7 +146,13 @@ void VL6180xInitSensor(int devAddress)
     // Send all of the custom data
     for (int i = 0; i < NUM_PUBLIC_REGS; i++)
     {
-        while (!I2CBufferAddInstruction(devAddress, I2C_WRITE, (uint8_t*)VL6180XCustomInitData[i], 3))
+        uint8_t toSend[3] = {0, 0, 0};
+        for (uint8_t j = 0; j < 3; j++)
+        {
+            toSend[j] = pgm_read_byte(&(VL6180XCustomInitData[i][j]));
+        }
+
+        while (!I2CBufferAddInstruction(devAddress, I2C_WRITE, (uint8_t*)(&toSend[0]), 3))
         {
             I2CTask();
         }
