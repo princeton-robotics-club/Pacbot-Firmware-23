@@ -8,7 +8,7 @@
 // Custom Includes
 #include "UsartAsFile.h"
 
-#define MAX_USART_BUFFER_SIZE 64
+#define MAX_USART_BUFFER_SIZE 100
 
 // Publicly available stream to use (kinda like stdout)
 FILE * usartStream_Ptr;

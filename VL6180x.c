@@ -34,14 +34,14 @@ const uint8_t VL6180XCustomInitData[NUM_PUBLIC_REGS][3] PROGMEM =
     {0x00, 0x31, 0x64},     // Sets how often temperature measurements are done (100)
     {0x00, 0x40, 0x63},     // Set ALS integration time to 100ms
     {0x00, 0x2e, 0x02},     // Performs a single temp calibration of the ranging sensor
-    {0x00, 0x1b, 0x01},     // Minimizes time between ranging measurements in continuous mode
+    {0x00, 0x1b, 0x02},     // Minimizes time between ranging measurements in continuous mode
     {0x00, 0x3e, 0x31},     // Sets the time between ALS measurements to .5 seconds
     {0x00, 0x14, 0x04},     // Configures interrupt on new sample ready threshold event for only ranging sensor
     {0x00, 0x2d, 0x00},     // Disables Range checks
     // {0x00, 0x16, 0x00},  // Sets "Fresh_out_of_reset" to 0, so that we can check later if reset occurred
     // {0x00, 0x10, 0x00},  // Disables XSHUT
-    
-    {0x00, 0x18, 0x03}      // Enables and initiates continuous operation
+    {0x00, 0x1c, 0x0f},     // This sets the max convergence time which is 5 less than the frequency we can poll
+    {0x00, 0x18, 0x01}      // Enables and initiates a range operation
 };
 
 // These are all private registers that you are required to initialize to these values
@@ -191,7 +191,7 @@ void VL6180xInit()
 I2CInstruction_ID VL6180xAddRead(int devAddress, uint8_t * result)
 {
     static uint8_t VL6180XRangeResultLocation[2] = {0x00, 0x62};
-    static uint8_t VL6180XIntClear[3] = {0x00, 0x15, 0x07};
+    static uint8_t VL6180XIntClear[3] = {0x00, 0x18, 0x01};
 
     int timeOutCounter = 0;
     while(timeOutCounter < 100 && !I2CBufferAddInstruction(devAddress, I2C_WRITE, VL6180XRangeResultLocation, 2))

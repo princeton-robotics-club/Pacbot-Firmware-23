@@ -5,7 +5,7 @@
 #include "I2CDriver.h"
 
 #define NUM_PRIVATE_REGS    30      // Stores the number of private regs I have to change
-#define NUM_PUBLIC_REGS     11      // Stores the number of public regs I want to change
+#define NUM_PUBLIC_REGS     12      // Stores the number of public regs I want to change
 
 #define START_ADDRESS       0x50    // The first I2C Address to assign
 

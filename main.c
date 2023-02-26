@@ -34,19 +34,16 @@ volatile int16_t goalTpp = 0;
 /* Add anything you want to print every 50ms */
 void debug_print(void)
 {
-    fprintf(usartStream_Ptr, "Dist:   %d, %d, %d, %d\n", 
+    fprintf(usartStream_Ptr, "Dist:   %d, %d, %d, %d, %d, %d, %d, %d\n", 
     VL6180xGetDist(FRONT_LEFT),
     VL6180xGetDist(FRONT_RIGHT),
+    VL6180xGetDist(RIGHT_FRONT),
+    VL6180xGetDist(RIGHT_BACK),
     VL6180xGetDist(BACK_RIGHT),
     VL6180xGetDist(BACK_LEFT),
-    );
-
-    // fprintf(usartStream_Ptr, "Status: %d, %d, %d, %d\n",
-    // VL6180xGetDistStatus(LEFT_FRONT),
-    // VL6180xGetDistStatus(LEFT_BACK),
-    // VL6180xGetDistStatus(BACK_RIGHT),
-    // VL6180xGetDistStatus(BACK_LEFT));
-    // return;
+    VL6180xGetDist(LEFT_BACK),
+    VL6180xGetDist(LEFT_FRONT));
+    return;
 }
 
 
@@ -93,8 +90,8 @@ void millisTask(void)
     }
     
 
-    // Ask for Distance data on every 10 milliseconds (offset by 1)
-    if (!((g_s_millis+1) % 10))
+    // Ask for Distance data on every 50 milliseconds (offset by 1)
+    if (!((g_s_millis+1) % 20))
     {
         VL6180xTask();
     }
