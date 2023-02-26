@@ -34,7 +34,7 @@ volatile int16_t goalTpp = 0;
 /* Add anything you want to print every 50ms */
 void debug_print(void)
 {
-    //fprintf(usartStream_Ptr, "Fr_R: %d\n", VL6180xGetDist(FRONT_RIGHT));
+    fprintf(usartStream_Ptr, "Fr_R: %d\n", VL6180xGetDist(FRONT_RIGHT));
     return;
 }
 
@@ -78,18 +78,18 @@ void millisTask(void)
         currTpp = tickBuf[0] - tickBuf[TICK_BUFF_SIZE - 1];
         for (int i = TICK_BUFF_SIZE - 2; i >= 0; i--)
             tickBuf[i + 1] = tickBuf[i];
-        fprintf(usartStream_Ptr, "motorTpms: %d\n", currTpp);
+        // fprintf(usartStream_Ptr, "motorTpms: %d\n", currTpp);
     }
     
 
     // Ask for Distance data on every 10 milliseconds (offset by 1)
-    if (!((g_s_millis+1) % 10))
+    if (!((g_s_millis+1) % 20))
     {
         VL6180xTask();
     }
 
     // DEBUG PRINT EVERY 50 ms
-    if (!(g_s_millis % 50))
+    if (!(g_s_millis % 20))
     {
         debug_print();
     }
