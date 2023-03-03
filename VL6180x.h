@@ -41,4 +41,10 @@ I2CInstruction_ID VL6180xAddRead(int devAddress, uint8_t* result);
 /* Adds a read to the I2CBuffer for each distance sensor */
 I2CInstruction_ID VL6180xTask(void);
 
+/* Keeps low-pass averages of the distances between adjacent sensors */
+int getDistDiffFront();
+int getDistDiffBack();
+int getDistDiffLeft();
+int getDistDiffRight();
+
 #endif//_VL6180X_H_

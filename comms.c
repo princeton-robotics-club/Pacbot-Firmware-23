@@ -92,19 +92,19 @@ void debug_comms_task(void)
         
         switch (k_name) {
             case 'p': 
-                kpV = k_val;
+                kpA = k_val;
                 motors_on = 0;
-                fprintf(usartStream_Ptr, "[c] kp changed to %d\n", kpV);
+                fprintf(usartStream_Ptr, "[c] kp changed to %d\n", kpA);
                 break;
             case 'i':
-                kiV = k_val;
+                kiA = k_val;
                 motors_on = 0;
-                fprintf(usartStream_Ptr, "[c] ki changed to %d\n", kiV);
+                fprintf(usartStream_Ptr, "[c] ki changed to %d\n", kiA);
                 break;
             case 'd':
-                kdV = k_val;
+                kdA = k_val;
                 motors_on = 0;
-                fprintf(usartStream_Ptr, "[c] kd changed to %d\n", kdV);
+                fprintf(usartStream_Ptr, "[c] kd changed to %d\n", kdA);
                 break;
             case 'm':
                 goalTpp = k_val;
@@ -112,13 +112,18 @@ void debug_comms_task(void)
                 fprintf(usartStream_Ptr, "[c] motor set speed changed to %d\n[c] activated motors\n", goalTpp);
                 break;
             case 'r':
-                setGoalHeading(bno055GetCurrHeading() + (k_val << 4));
+                setGoalHeading(getGoalHeading() + (k_val << 4));
                 fprintf(usartStream_Ptr, "[c] new goal angle set\n[c] activated motors\n");
                 motors_on = 1;
                 goalTpp = 0;
                 break;
+            case 'w':
+                wallAlignRight();
+                motors_on = 1;
+                goalTpp = 0;
+                break;
             case '?':
-                fprintf(usartStream_Ptr, "[c] kp = %d, ki = %d, kd = %d, 12-bit pwm = %d", kpV, kiV, kdV, goalTpp);
+                fprintf(usartStream_Ptr, "[c] kp = %d, ki = %d, kd = %d, 12-bit pwm = %d", kpA, kiA, kdA, goalTpp);
                 motors_on = 0;
                 break;
             default:

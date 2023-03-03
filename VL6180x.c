@@ -232,15 +232,57 @@ I2CInstruction_ID VL6180xAddReadStatus(int devAddress, uint8_t * result)
     return ret;
 }
 
+#define DIST_DIFF_BUFF_BITS 6
+#define DIST_DIFF_BUFF_SIZE (1 << DIST_DIFF_BUFF_BITS)
+volatile int16_t distDiffBufFront[DIST_DIFF_BUFF_SIZE];
+volatile int16_t distDiffBufRight[DIST_DIFF_BUFF_SIZE];
+volatile int16_t distDiffBufLeft[DIST_DIFF_BUFF_SIZE];
+volatile int16_t distDiffBufBack[DIST_DIFF_BUFF_SIZE];
+volatile int distIdx = 0;
+
+// Distance sensor differences
+volatile int32_t windowFront, windowBack, windowLeft, windowRight;
+
 /* Adds a read to the I2CBuffer for each distance sensor */
 I2CInstruction_ID VL6180xTask(void)
 {
-    VL6180xAddRead(START_ADDRESS + FRONT_LEFT, (uint8_t *) &g_s_distResult[FRONT_LEFT]);
+    int nextDistIdx = (distIdx + 1) % DIST_DIFF_BUFF_SIZE;
+
+    VL6180xAddRead(START_ADDRESS + FRONT_LEFT,  (uint8_t *) &g_s_distResult[FRONT_LEFT]);
     VL6180xAddRead(START_ADDRESS + FRONT_RIGHT, (uint8_t *) &g_s_distResult[FRONT_RIGHT]);
     VL6180xAddRead(START_ADDRESS + RIGHT_FRONT, (uint8_t *) &g_s_distResult[RIGHT_FRONT]);
-    VL6180xAddRead(START_ADDRESS + RIGHT_BACK, (uint8_t *) &g_s_distResult[RIGHT_BACK]);
-    VL6180xAddRead(START_ADDRESS + BACK_RIGHT, (uint8_t *) &g_s_distResult[BACK_RIGHT]);
-    VL6180xAddRead(START_ADDRESS + BACK_LEFT, (uint8_t *) &g_s_distResult[BACK_LEFT]);
-    VL6180xAddRead(START_ADDRESS + LEFT_BACK, (uint8_t *) &g_s_distResult[LEFT_BACK]);
+    VL6180xAddRead(START_ADDRESS + RIGHT_BACK,  (uint8_t *) &g_s_distResult[RIGHT_BACK]);
+    VL6180xAddRead(START_ADDRESS + BACK_RIGHT,  (uint8_t *) &g_s_distResult[BACK_RIGHT]);
+    VL6180xAddRead(START_ADDRESS + BACK_LEFT,   (uint8_t *) &g_s_distResult[BACK_LEFT]);
+    VL6180xAddRead(START_ADDRESS + LEFT_BACK,   (uint8_t *) &g_s_distResult[LEFT_BACK]);
+
+    distDiffBufFront[distIdx] = g_s_distResult[FRONT_LEFT]  - g_s_distResult[FRONT_RIGHT];
+    distDiffBufRight[distIdx] = g_s_distResult[RIGHT_FRONT] - g_s_distResult[RIGHT_BACK];
+    distDiffBufBack [distIdx] = g_s_distResult[BACK_RIGHT]  - g_s_distResult[BACK_LEFT];
+    distDiffBufLeft [distIdx] = g_s_distResult[LEFT_BACK]   - g_s_distResult[LEFT_FRONT];
+    
+    windowFront += (distDiffBufFront[distIdx] - distDiffBufFront[nextDistIdx]); 
+    windowRight += (distDiffBufRight[distIdx] - distDiffBufRight[nextDistIdx]);
+    windowBack  += (distDiffBufBack[distIdx]  - distDiffBufBack[nextDistIdx]); 
+    windowLeft  += (distDiffBufRight[distIdx] - distDiffBufRight[nextDistIdx]);
+
+    distIdx = nextDistIdx;
+
     return VL6180xAddRead(START_ADDRESS + LEFT_FRONT, (uint8_t *) &g_s_distResult[LEFT_FRONT]);
+}
+
+int getDistDiffFront() {
+    return windowFront >> DIST_DIFF_BUFF_BITS;
+}
+
+int getDistDiffBack() {
+    return windowBack >> DIST_DIFF_BUFF_BITS;
+}
+
+int getDistDiffLeft() {
+    return windowLeft >> DIST_DIFF_BUFF_BITS;
+}
+
+int getDistDiffRight() {
+    return windowRight >> DIST_DIFF_BUFF_BITS;
 }

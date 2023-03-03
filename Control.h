@@ -9,7 +9,8 @@
 
 void pidStraightLine();
 void killMotors();
-void setGoalHeading(uint16_t newG);
+void setGoalHeading(int16_t newG);
+int16_t getGoalHeading();
 
 extern int kpA;
 extern int kiA;

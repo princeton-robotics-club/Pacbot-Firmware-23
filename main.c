@@ -23,18 +23,17 @@
 
 
 #define TICK_BUFF_SIZE 4
-
-// volatile int tbIdx;
 volatile int32_t tickBuf[TICK_BUFF_SIZE];
+volatile int tickBufIdx = 0;
 
 volatile int16_t currTpp = 0;
 volatile int16_t goalTpp = 0;
 
-
 /* Add anything you want to print every 50ms */
 void debug_print(void)
 {
-    fprintf(usartStream_Ptr, "Fr_R: %d\n", VL6180xGetDist(FRONT_RIGHT));
+    if (!motors_on)
+        fprintf(usartStream_Ptr, "%d\n", getDistDiffRight());
     return;
 }
 
@@ -74,10 +73,15 @@ void millisTask(void)
     // Ask for Encoder data every 5 milliseconds (offset by 3)
     if (!((g_s_millis+3) % 5))
     {
-        getAverageEncoderTicks((int32_t *) tickBuf);
+        getAverageEncoderTicks((int32_t *) (tickBuf + tickBufIdx));
+        currTpp = tickBuf[tickBufIdx] - tickBuf[(tickBufIdx + 1) % TICK_BUFF_SIZE];
+        tickBufIdx = (tickBufIdx + 1) % TICK_BUFF_SIZE;
+        /*
+        getAverageEncoderTicks((int32_t *) (tickBuf));
         currTpp = tickBuf[0] - tickBuf[TICK_BUFF_SIZE - 1];
         for (int i = TICK_BUFF_SIZE - 2; i >= 0; i--)
             tickBuf[i + 1] = tickBuf[i];
+        */
         // fprintf(usartStream_Ptr, "motorTpms: %d\n", currTpp);
     }
     
