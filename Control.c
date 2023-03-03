@@ -75,7 +75,7 @@ void wallAlignRight() {
     // I got this by doing fun Excel spreadsheets and rounding to
     // the nearest quarter degree - I will add more documentation later
     // --> this code is capable of correcting up to a 50 degree rotation
-    int theta;
+    int theta = 0;
     if (diff <= 1)
         theta = 18 * diff;
     else if (diff <= 11)

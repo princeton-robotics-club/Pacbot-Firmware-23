@@ -53,20 +53,24 @@ void commsTask(void)
     return;
 }
 
-
+#define modeChar(mode) (mode ? 'V' : 'A')
 
 void debug_comms_task(void)
 {
     static char k_inp[15];
     static int myindex = 0;
+    static int mode = 0; // 0 = angle, 1 = speed
+    static int modeChar = 'A';
 
     char k_name = 0;
     int k_val = 0;
     int read_rdy = 0;
-    //char * k_tmp;
 
-    // Print the sensor data
-    // fprintf(usartStream_Ptr, "%d\n", currHeading);
+    // Initialize the pointers
+    static int * kp = &kpA;
+    static int * ki = &kiA;
+    static int * kd = &kdA;
+
     // Print any data we've received (loopback testing)
     int readBufSize = getReceiveBufSize();
     if (readBufSize)
@@ -88,23 +92,24 @@ void debug_comms_task(void)
         k_inp[myindex] = 0;
         myindex = 0;
         k_name  = k_inp[0] | 32;
-        k_val = strtod(k_inp+1, NULL);
+        k_val = strtol(k_inp+1, NULL, 10);
+        modeChar = mode ? 'A' : 'V';
         
         switch (k_name) {
             case 'p': 
-                kpA = k_val;
+                *kp = k_val;
                 motors_on = 0;
-                fprintf(usartStream_Ptr, "[c] kp changed to %d\n", kpA);
+                fprintf(usartStream_Ptr, "[c] kp%c changed to %d\n", modeChar(mode), *kp);
                 break;
             case 'i':
-                kiA = k_val;
+                *ki = k_val;
                 motors_on = 0;
-                fprintf(usartStream_Ptr, "[c] ki changed to %d\n", kiA);
+                fprintf(usartStream_Ptr, "[c] ki%c changed to %d\n", modeChar(mode), *ki);
                 break;
             case 'd':
-                kdA = k_val;
+                *kd = k_val;
                 motors_on = 0;
-                fprintf(usartStream_Ptr, "[c] kd changed to %d\n", kdA);
+                fprintf(usartStream_Ptr, "[c] kd%c changed to %d\n", modeChar(mode), *kd);
                 break;
             case 'm':
                 goalTpp = k_val;
@@ -112,18 +117,26 @@ void debug_comms_task(void)
                 fprintf(usartStream_Ptr, "[c] motor set speed changed to %d\n[c] activated motors\n", goalTpp);
                 break;
             case 'r':
-                setGoalHeading(getGoalHeading() + (k_val << 4));
+                adjustHeading(k_val << 4);
                 fprintf(usartStream_Ptr, "[c] new goal angle set\n[c] activated motors\n");
                 motors_on = 1;
                 goalTpp = 0;
                 break;
             case 'w':
                 wallAlignRight();
+                fprintf(usartStream_Ptr, "[c] started wall-adjustment sequence");
                 motors_on = 1;
                 goalTpp = 0;
                 break;
+            case '/':
+                fprintf(usartStream_Ptr, "[c] switched PID debug group from %c to %c", modeChar(mode), modeChar(1 - mode));
+                mode = 1 - mode;
+                kp = mode ? (&kpV) : (&kpA);
+                ki = mode ? (&kiV) : (&kiA);
+                kd = mode ? (&kdV) : (&kdA);
+                break;
             case '?':
-                fprintf(usartStream_Ptr, "[c] kp = %d, ki = %d, kd = %d, 12-bit pwm = %d", kpA, kiA, kdA, goalTpp);
+                fprintf(usartStream_Ptr, "[c] kp%c = %d, ki%c = %d, kd%c = %d", modeChar(mode), *kp, modeChar(mode), *ki, modeChar(mode), *kd);
                 motors_on = 0;
                 break;
             default:

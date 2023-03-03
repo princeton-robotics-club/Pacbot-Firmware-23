@@ -10,6 +10,9 @@
 void pidStraightLine();
 void killMotors();
 void setGoalHeading(int16_t newG);
+void adjustHeading(int16_t headingDelta);
+void wallAlignRight();
+
 int16_t getGoalHeading();
 
 extern int kpA;

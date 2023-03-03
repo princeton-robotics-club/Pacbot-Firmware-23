@@ -21,29 +21,31 @@
 #include <inttypes.h>
 #include <string.h>
 
-
+// Tick buffer - low-pass filtering for encoders using a ring buffer
 #define TICK_BUFF_SIZE 4
 volatile int32_t tickBuf[TICK_BUFF_SIZE];
 volatile int tickBufIdx = 0;
 
+// Tpp = ticks per period, a measure of how fast the encoders are going
 volatile int16_t currTpp = 0;
 volatile int16_t goalTpp = 0;
 
 /* Add anything you want to print every 50ms */
 void debug_print(void)
 {
-    if (!motors_on)
-        fprintf(usartStream_Ptr, "%d\n", getDistDiffRight());
+    //if (!motors_on)
+    //    fprintf(usartStream_Ptr, "%d\n", getDistDiffRight());
     return;
 }
-
 
 // Milliseconds since initialization
 volatile static uint32_t g_s_millis = 0;
 volatile static int8_t g_s_milliFlag = 0;
 
+// This is run every ~1 ms
 void millisTask(void)
 {
+    // Throws an error if millisecond timer fails
     static unsigned long lastMilli;
     if (lastMilli != g_s_millis && lastMilli != g_s_millis - 1)
     {
@@ -76,15 +78,7 @@ void millisTask(void)
         getAverageEncoderTicks((int32_t *) (tickBuf + tickBufIdx));
         currTpp = tickBuf[tickBufIdx] - tickBuf[(tickBufIdx + 1) % TICK_BUFF_SIZE];
         tickBufIdx = (tickBufIdx + 1) % TICK_BUFF_SIZE;
-        /*
-        getAverageEncoderTicks((int32_t *) (tickBuf));
-        currTpp = tickBuf[0] - tickBuf[TICK_BUFF_SIZE - 1];
-        for (int i = TICK_BUFF_SIZE - 2; i >= 0; i--)
-            tickBuf[i + 1] = tickBuf[i];
-        */
-        // fprintf(usartStream_Ptr, "motorTpms: %d\n", currTpp);
     }
-    
 
     // Ask for Distance data on every 10 milliseconds (offset by 1)
     if (!((g_s_millis+1) % 20))
@@ -103,12 +97,12 @@ void millisTask(void)
 // This handles our millisecond counter overflow
 ISR(TIMER0_OVF_vect)
 {
+    // Allow other interrupts to preempt this interrupt
     sei();
 
-    // Increment milliseconds
+    // Increment milliseconds, then run the millisecond task
     g_s_millis++;
     g_s_milliFlag = 1;
-
     millisTask();
 }
 
@@ -137,13 +131,22 @@ int main(void)
     usartInit(115200);
     encoderInit();
    
+    // Configures IMU
     bno055EnterNDOF();
 
+    // Enables interrupts
     sei();
 
+    // Initializes shift register
     srInit();
+
+    // Initializes distance sensors
     VL6180xInit();
+
+    // Initializes millisecond timer
     millisInit();
+
+    // Initializes motors
     motorsInit();
     
     // Main loop
