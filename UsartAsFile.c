@@ -77,11 +77,13 @@ void usartInit(long baud)
     usartStream_Ptr = fdevopen(USART_putChar, USART_getChar);
 }
 
+volatile char a;
+
 /* Run when the USART hardware receives a byte 
  * Moves the byte into the receive buffer for the client */
 ISR(USART1_RX_vect)
 {
-    if (g_receiveBuf.size < g_maxSize)
+    if (g_receiveBuf.size < (g_maxSize - 1))
     {
         *g_receiveBuf.w_ptr = UDR1;
         g_receiveBuf.w_ptr++;
@@ -92,6 +94,10 @@ ISR(USART1_RX_vect)
         }
 
         g_receiveBuf.size++;
+    }
+    else
+    {
+        a = UDR1;
     }
 }
 
@@ -134,9 +140,9 @@ int usartTask(void)
                 UDR1 = retval;
             }
 
-            if (g_writeBuf.r_ptr >= (g_writeBuf.buffer + g_maxSize))
+            if (g_writeBuf.r_ptr >= ((&g_writeBuf.buffer[0]) + g_maxSize))
             {
-                g_writeBuf.r_ptr = (char *) g_writeBuf.buffer;
+                g_writeBuf.r_ptr = (char *) (&g_writeBuf.buffer[0]);
             }
             
         }
@@ -158,9 +164,9 @@ static int USART_getChar(FILE * stream)
             g_receiveBuf.r_ptr++;
             g_receiveBuf.size--;
 
-            if (g_receiveBuf.r_ptr >= (g_receiveBuf.buffer + g_maxSize))
+            if (g_receiveBuf.r_ptr >= ((&g_receiveBuf.buffer[0]) + g_maxSize))
             {
-                g_receiveBuf.r_ptr = (char *) g_receiveBuf.buffer;
+                g_receiveBuf.r_ptr = (char *) (&g_receiveBuf.buffer[0]);
             }
         }
     }

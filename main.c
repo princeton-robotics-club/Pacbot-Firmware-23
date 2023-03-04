@@ -33,8 +33,9 @@ volatile int16_t goalTpp = 0;
 /* Add anything you want to print every 50ms */
 void debug_print(void)
 {
-    //if (!motors_on)
-    //    fprintf(usartStream_Ptr, "%d\n", VL6180xGetDist(FRONT_LEFT));
+    // fprintf(usartStream_Ptr, "rf: %d, ", VL6180xGetDist(RIGHT_FRONT));
+    // fprintf(usartStream_Ptr, "rb: %d\n", VL6180xGetDist(RIGHT_BACK));
+
     return;
 }
 
@@ -65,6 +66,12 @@ void millisTask(void)
     {
         bno055Task();
     }
+
+    if (!(g_s_millis % 5))
+    {
+        // commsTask();
+    }
+    
 
     // Run PID every 10 milliseconds (offset by 2)
     if (!((g_s_millis+2) % 10))

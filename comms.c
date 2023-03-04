@@ -3,11 +3,13 @@
 #include "UsartAsFile.h"
 #include "Control.h"
 #include "comms.h"
+#include "Defines.h"
 
 // Library Includes
 #include <avr/io.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <util/atomic.h>
 
 typedef struct Command
 {
@@ -16,17 +18,54 @@ typedef struct Command
     uint32_t commNum;
 } PacbCommand;
 
-static volatile PacbCommand g_s_commandBuf[2];
+static volatile PacbCommand g_s_commandBuf[2] = {};
 
-uint8_t gameState = GS_ON;
-volatile uint32_t g_lastCommandSent;
+static Gamestate gameState = GS_ON;
+static volatile uint32_t g_lastCommandSent = 0b00010000000100000001000000010000;
+// 1 if failed, 0 if succeeded
+static volatile uint8_t g_lastCommandFailed = TRUE;
+Gamestate getGameState()
+{
+    return gameState;
+}
+uint8_t getCurrentInstructionType()
+{
+    return g_s_commandBuf[0].commType;
+}
+uint8_t getCurrentInstructionData()
+{
+    return g_s_commandBuf[0].commData;
+}
+uint32_t getCurrentInstructionNum()
+{
+    return g_s_commandBuf[0].commNum;
+}
+void moveToNextInstruction()
+{
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) 
+    {
+        g_s_commandBuf[0].commData = g_s_commandBuf[1].commData;
+        g_s_commandBuf[0].commType = g_s_commandBuf[1].commType;
+        g_s_commandBuf[0].commNum = g_s_commandBuf[1].commNum;
+        g_s_commandBuf[1].commNum = 0;
+    }
+}
 
 /* This function uses fputc(char, usartStream_Ptr) to send the
  * following messages to the offboard computer 
- * '|' g_lastCommandSent[3:0] '\n' */
+ * '|' g_lastCommandSent[3:0] S/F '\n' */
 // Should have six calls to function fputc
 void commsSendTask(void)
 {
+    fputc('|', usartStream_Ptr);
+    for (int8_t i = 24; i >= 0; i-=8)
+    {
+        uint8_t nb = g_lastCommandSent >> i;
+        fputc(nb, usartStream_Ptr);
+    }
+    fputc((uint8_t)getReceiveBufSize(), usartStream_Ptr);
+    fputc('\n', usartStream_Ptr);
+
     return;
 }
 
@@ -43,13 +82,94 @@ void commsSendTask(void)
 // Should have 8 calls to fputc
 void commsReceiveTask(void)
 {
+    if (getReceiveBufSize() < 8)
+    {
+        return;
+    }
+
+    int b = fgetc(usartStream_Ptr);
+    // fputc(b, usartStream_Ptr);
+    if (b != '|')
+    {
+        return;
+    }
+
+    uint32_t tempLastCommand = 0;
+    for (int8_t i = 24; i >= 0; i-=8)
+    {
+        b = fgetc(usartStream_Ptr);
+        // fputc(b, usartStream_Ptr);
+        if (b == '\n')
+        {
+            return;
+        }
+        tempLastCommand |= ((uint32_t)b) << i;
+    }
+
+    uint8_t tempGameState = 0;
+    b = fgetc(usartStream_Ptr);
+    // fputc(b, usartStream_Ptr);
+    if (b == '\n')
+    {
+        return;
+    }
+    tempGameState = b;
+
+    uint8_t tempAction = 0;
+    b = fgetc(usartStream_Ptr);
+    // fputc(b, usartStream_Ptr);
+    if (b == '\n')
+    {
+        return;
+    }
+    tempAction = b;
+    
+    b = fgetc(usartStream_Ptr);
+    // fputc(b, usartStream_Ptr);
+    if (b != '\n')
+    {
+        return;
+    }
+    
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+    {
+        // This is faster than filling a struct and copying by value
+        uint8_t ind = 1;
+        if (!g_s_commandBuf[0].commNum)
+        {
+            ind = 0;
+        }
+        g_s_commandBuf[ind].commNum = tempLastCommand;
+        if (tempAction & 0b10000000)
+        {
+            g_s_commandBuf[ind].commType = A_TYPE_MOVE;
+        }
+        else
+        {
+            g_s_commandBuf[ind].commType = A_TYPE_FACE;
+        }
+        g_s_commandBuf[ind].commData = tempAction & 0b1111111;
+
+        gameState = tempGameState;
+    }
+
+    // REMOVE THIS IT IS FOR DEBUGGING
+#warning REMOVE_THE_NEXT_LINE_AT_SOME_POINT   
+
+    if (tempLastCommand > g_lastCommandSent)
+    {
+        g_lastCommandSent = tempLastCommand;
+    }
+
+    //fprintf(usartStream_Ptr, "HERE\n");
+
     return;
 }
 
 void commsTask(void)
 {
-    commsReceiveTask();
     commsSendTask();
+    commsReceiveTask();
     return;
 }
 
