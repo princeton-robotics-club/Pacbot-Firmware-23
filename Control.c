@@ -19,9 +19,9 @@ int kpA = KPA; // 120 7 1600
 int kiA = KIA;
 int kdA = KDA;
 
-#define KPV 80
+#define KPV 1000
 #define KIV 0
-#define KDV 80
+#define KDV 8000
 int kpV = KPV;
 int kiV = KIV;
 int kdV = KDV;
@@ -115,8 +115,12 @@ void pidStraightLine() {
     static int     lastVelErr = 0;
     static int64_t sumVelErr = 0;
 
-    if (VL6180xGetDist(FRONT_RIGHT) < 100 || VL6180xGetDist(FRONT_LEFT) < 100)
+    fprintf(usartStream_Ptr, "%d\n", VL6180xGetDist(FRONT_LEFT));
+
+    if (VL6180xGetDist(FRONT_RIGHT) < 80 || VL6180xGetDist(FRONT_LEFT) < 80) {
+        //fprintf(usartStream_Ptr, " TRYING TO STOP - %d ", goalTpp);
         goalTpp = 0;
+    }
 
     if (!motors_on) {
         killMotors();
@@ -142,11 +146,12 @@ void pidStraightLine() {
     sumVelErr += currVelErr;
 
     int64_t angle_adj = ((int64_t)currAngErr * kpA + (int64_t)(currAngErr - lastAngErr) * kdA + (sumAngErr * kiA)) >> 5;
-    int64_t speed_adj = ((int64_t)currVelErr * kpV + (int64_t)(currVelErr - lastVelErr) * kdV + ((sumVelErr * kiV) >> 6)) >> 5;
+    int64_t speed_adj = ((int64_t)currVelErr * kpV + (int64_t)(currVelErr - lastVelErr) * kdV + (sumVelErr * kiV)) >> 5;
 
     av_pwm += speed_adj;
 
-    fprintf(usartStream_Ptr, "[c] %d %d\n", currAngErr, (int)angle_adj);
+    //fprintf(usartStream_Ptr, "             [a] %d %d\n", currAngErr, (int)angle_adj);
+    //fprintf(usartStream_Ptr, "[v] %d %d\n", currVelErr, (int)speed_adj);
 
     setLeftMotorPower(av_pwm + (int)angle_adj);
     setRightMotorPower(av_pwm - (int)angle_adj);

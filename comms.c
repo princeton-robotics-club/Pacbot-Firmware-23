@@ -99,48 +99,48 @@ void debug_comms_task(void)
             case 'p': 
                 *kp = k_val;
                 motors_on = 0;
-                fprintf(usartStream_Ptr, "[c] kp%c changed to %d\n", modeChar(mode), *kp);
+                fprintf(usartStream_Ptr, "kp%c = %d\n", modeChar(mode), *kp);
                 break;
             case 'i':
                 *ki = k_val;
                 motors_on = 0;
-                fprintf(usartStream_Ptr, "[c] ki%c changed to %d\n", modeChar(mode), *ki);
+                fprintf(usartStream_Ptr, "ki%c = %d\n", modeChar(mode), *ki);
                 break;
             case 'd':
                 *kd = k_val;
                 motors_on = 0;
-                fprintf(usartStream_Ptr, "[c] kd%c changed to %d\n", modeChar(mode), *kd);
+                fprintf(usartStream_Ptr, "kd%c = %d\n", modeChar(mode), *kd);
                 break;
             case 'm':
                 goalTpp = k_val;
                 motors_on = 1;
-                fprintf(usartStream_Ptr, "[c] motor set speed changed to %d\n[c] activated motors\n", goalTpp);
+                fprintf(usartStream_Ptr, "goaltpp = %d\n", goalTpp);
                 break;
             case 'r':
                 adjustHeading(k_val << 4);
-                fprintf(usartStream_Ptr, "[c] new goal angle set\n[c] activated motors\n");
+                fprintf(usartStream_Ptr, "rotation started\n");
                 motors_on = 1;
                 goalTpp = 0;
                 break;
             case 'w':
                 wallAlignRight();
-                fprintf(usartStream_Ptr, "[c] started wall-adjustment sequence");
+                fprintf(usartStream_Ptr, "wall-adjust started\n");
                 motors_on = 1;
                 goalTpp = 0;
                 break;
             case '/':
-                fprintf(usartStream_Ptr, "[c] switched PID debug group from %c to %c", modeChar(mode), modeChar(1 - mode));
+                fprintf(usartStream_Ptr, "switched PID --> %c to %c", modeChar(mode), modeChar(1 - mode));
                 mode = 1 - mode;
                 kp = mode ? (&kpV) : (&kpA);
                 ki = mode ? (&kiV) : (&kiA);
                 kd = mode ? (&kdV) : (&kdA);
                 break;
             case '?':
-                fprintf(usartStream_Ptr, "[c] kp%c = %d, ki%c = %d, kd%c = %d", modeChar(mode), *kp, modeChar(mode), *ki, modeChar(mode), *kd);
+                fprintf(usartStream_Ptr, "kp%c = %d, ki%c = %d, kd%c = %d", modeChar(mode), *kp, modeChar(mode), *ki, modeChar(mode), *kd);
                 motors_on = 0;
                 break;
             default:
-                fprintf(usartStream_Ptr, "[c] invalid input - cut motors");
+                fprintf(usartStream_Ptr, "invalid - cut motors");
                 motors_on = 0;
         }
         DDRE |= (1 << PE6);

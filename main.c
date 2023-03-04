@@ -34,7 +34,7 @@ volatile int16_t goalTpp = 0;
 void debug_print(void)
 {
     //if (!motors_on)
-    //    fprintf(usartStream_Ptr, "%d\n", getDistDiffRight());
+    //    fprintf(usartStream_Ptr, "%d\n", VL6180xGetDist(FRONT_LEFT));
     return;
 }
 

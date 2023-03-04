@@ -232,7 +232,7 @@ I2CInstruction_ID VL6180xAddReadStatus(int devAddress, uint8_t * result)
     return ret;
 }
 
-#define DIST_DIFF_BUFF_BITS 6
+#define DIST_DIFF_BUFF_BITS 3
 #define DIST_DIFF_BUFF_SIZE (1 << DIST_DIFF_BUFF_BITS)
 volatile int16_t distDiffBufFront[DIST_DIFF_BUFF_SIZE];
 volatile int16_t distDiffBufRight[DIST_DIFF_BUFF_SIZE];
