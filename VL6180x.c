@@ -247,15 +247,6 @@ volatile int32_t windowFront, windowBack, windowLeft, windowRight;
 I2CInstruction_ID VL6180xTask(void)
 {
     int nextDistIdx = (distIdx + 1) % DIST_DIFF_BUFF_SIZE;
-
-    VL6180xAddRead(START_ADDRESS + FRONT_LEFT,  (uint8_t *) &g_s_distResult[FRONT_LEFT]);
-    VL6180xAddRead(START_ADDRESS + FRONT_RIGHT, (uint8_t *) &g_s_distResult[FRONT_RIGHT]);
-    VL6180xAddRead(START_ADDRESS + RIGHT_FRONT, (uint8_t *) &g_s_distResult[RIGHT_FRONT]);
-    VL6180xAddRead(START_ADDRESS + RIGHT_BACK,  (uint8_t *) &g_s_distResult[RIGHT_BACK]);
-    VL6180xAddRead(START_ADDRESS + BACK_RIGHT,  (uint8_t *) &g_s_distResult[BACK_RIGHT]);
-    VL6180xAddRead(START_ADDRESS + BACK_LEFT,   (uint8_t *) &g_s_distResult[BACK_LEFT]);
-    VL6180xAddRead(START_ADDRESS + LEFT_BACK,   (uint8_t *) &g_s_distResult[LEFT_BACK]);
-
     distDiffBufFront[distIdx] = g_s_distResult[FRONT_LEFT]  - g_s_distResult[FRONT_RIGHT];
     distDiffBufRight[distIdx] = g_s_distResult[RIGHT_FRONT] - g_s_distResult[RIGHT_BACK];
     distDiffBufBack [distIdx] = g_s_distResult[BACK_RIGHT]  - g_s_distResult[BACK_LEFT];
@@ -268,6 +259,13 @@ I2CInstruction_ID VL6180xTask(void)
 
     distIdx = nextDistIdx;
 
+    VL6180xAddRead(START_ADDRESS + FRONT_LEFT,  (uint8_t *) &g_s_distResult[FRONT_LEFT]);
+    VL6180xAddRead(START_ADDRESS + FRONT_RIGHT, (uint8_t *) &g_s_distResult[FRONT_RIGHT]);
+    VL6180xAddRead(START_ADDRESS + RIGHT_FRONT, (uint8_t *) &g_s_distResult[RIGHT_FRONT]);
+    VL6180xAddRead(START_ADDRESS + RIGHT_BACK,  (uint8_t *) &g_s_distResult[RIGHT_BACK]);
+    VL6180xAddRead(START_ADDRESS + BACK_RIGHT,  (uint8_t *) &g_s_distResult[BACK_RIGHT]);
+    VL6180xAddRead(START_ADDRESS + BACK_LEFT,   (uint8_t *) &g_s_distResult[BACK_LEFT]);
+    VL6180xAddRead(START_ADDRESS + LEFT_BACK,   (uint8_t *) &g_s_distResult[LEFT_BACK]);
     return VL6180xAddRead(START_ADDRESS + LEFT_FRONT, (uint8_t *) &g_s_distResult[LEFT_FRONT]);
 }
 

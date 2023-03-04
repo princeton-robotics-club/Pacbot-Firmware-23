@@ -12,6 +12,13 @@
 #define KD 290
 */
 
+
+// 30:1
+/* 
+#define KPA 40
+#define KIA 6
+#define KDA 600
+*/
 #define KPA 80
 #define KIA 11
 #define KDA 1200
@@ -19,6 +26,14 @@ int kpA = KPA; // 120 7 1600
 int kiA = KIA;
 int kdA = KDA;
 
+// 30:1
+/* 
+#define KPV 500
+#define KIV 0
+#define KDV 4000
+*/
+
+// 15:1
 #define KPV 1000
 #define KIV 0
 #define KDV 8000
