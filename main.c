@@ -91,7 +91,7 @@ void millisTask(void)
 
         // Cosine adjustment --> uses a second-order Taylor approximation for cosine
         // to account for ticks "wasted" by not traveling perfectly straight
-        int64_t theta = bno055GetCurrHeading();
+        int64_t theta = bno055GetCurrHeading() - getGoalHeading();
         goalTicksTotal += (5 * theta * theta * currTpp) >> (TICK_BUFF_SIZE_BITS + 23);
     }
 
