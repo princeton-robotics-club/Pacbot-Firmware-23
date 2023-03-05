@@ -22,7 +22,8 @@
 #include <string.h>
 
 // Tick buffer - low-pass filtering for encoders using a ring buffer
-#define TICK_BUFF_SIZE 4
+#define TICK_BUFF_SIZE_BITS 2
+#define TICK_BUFF_SIZE (1 << TICK_BUFF_SIZE_BITS)
 volatile int32_t tickBuf[TICK_BUFF_SIZE];
 volatile int tickBufIdx = 0;
 
@@ -76,16 +77,22 @@ void millisTask(void)
     // Run PID every 10 milliseconds (offset by 2)
     if (!((g_s_millis+2) % 10))
     {
-        
+
         pidStraightLine();
     }
 
     // Ask for Encoder data every 5 milliseconds (offset by 3)
     if (!((g_s_millis+3) % 5))
     {
+        // Uses a ring buffer to low-pass filter the encoder speeds
         getAverageEncoderTicks((int32_t *) (tickBuf + tickBufIdx));
         currTpp = tickBuf[tickBufIdx] - tickBuf[(tickBufIdx + 1) % TICK_BUFF_SIZE];
         tickBufIdx = (tickBufIdx + 1) % TICK_BUFF_SIZE;
+
+        // Cosine adjustment --> uses a second-order Taylor approximation for cosine
+        // to account for ticks "wasted" by not traveling perfectly straight
+        int64_t theta = bno055GetCurrHeading();
+        goalTicksTotal += (5 * theta * theta * currTpp) >> (TICK_BUFF_SIZE_BITS + 23);
     }
 
     // Ask for Distance data on every 10 milliseconds (offset by 1)

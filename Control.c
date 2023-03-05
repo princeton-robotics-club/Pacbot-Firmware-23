@@ -36,7 +36,7 @@ int kdA = KDA;
 */
 
 // 15:1
-#define KPV 1500
+#define KPV 150
 #define KIV 0
 #define KDV 10000
 int kpV = KPV;
@@ -45,7 +45,7 @@ int kdV = KDV;
 
 int av_pwm = 0;
 
-#define GOOD_TICKS_BOUND 3
+#define GOOD_ITERS_BOUND 3
 
 static volatile int16_t goalHeading = 0;
 
@@ -133,7 +133,7 @@ void pidStraightLine() {
     static int     lastVelErr = 0;
     static int64_t sumVelErr = 0;
 
-    static int goodTicks = 0;
+    static int goodIters = 0;
 
     int64_t avTicksNow;
     getAverageEncoderTicks(&avTicksNow);
@@ -162,25 +162,29 @@ void pidStraightLine() {
         lastVelErr = 0;
         sumVelErr = 0;
         av_pwm = 0;
-        goodTicks = 0;
+        goodIters = 0;
         goalHeading = bno055GetCurrHeading();
         return;
     }
 
+    // Current angle error calculation --> we want between -180 deg and +180 deg for minimum turning
     currAngErr = (goalHeading - bno055GetCurrHeading());
     while (currAngErr < -2880) currAngErr += 5760;
     while (currAngErr > +2880) currAngErr -= 5760;
 
+    // Calculates sum, capping its power output to 300
     if (currAngErr * lastAngErr <= 0) sumAngErr = 0;
     if ((sumAngErr + currAngErr) * kiA < (300 << 5) && (sumAngErr + currAngErr) * kiA > -(300 << 5))
         sumAngErr += currAngErr;
 
+    // Current velocity error calculation --> uses low-pass filtered data, so integral term is less helpful
     currVelErr = (goalTpp - currTpp);
     sumVelErr += currVelErr;
 
-    if (currAngErr > -2 && currAngErr < 2 && !currTpp && !goalTpp)
-        if (++goodTicks >= GOOD_TICKS_BOUND) 
-            motors_on = 0, fprintf(usartStream_Ptr, "good! motors stopped");
+    // Determines if the criteria are met to stop motors --> angle deviation needs to be small enough and motors must be correctly off
+    if (currAngErr > -2 && currAngErr < 2 && !currTpp && !goalTpp && ++goodIters >= GOOD_ITERS_BOUND) 
+        motors_on = 0, fprintf(usartStream_Ptr, "good! motors stopped");
+    else goodIters = 0;
 
     int64_t angle_adj = ((int64_t)currAngErr * kpA + (int64_t)(currAngErr - lastAngErr) * kdA + (sumAngErr * kiA)) >> 5;
     int64_t speed_adj = ((int64_t)currVelErr * kpV + (int64_t)(currVelErr - lastVelErr) * kdV + (sumVelErr * kiV)) >> 5;
