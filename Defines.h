@@ -11,4 +11,9 @@
 #define A_TYPE_MOVE 1
 #define A_TYPE_FACE 0
 
+#define DIR_NORTH 0b00
+#define DIR_SOUTH 0b01
+#define DIR_EAST  0b10
+#define DIR_WEST  0b11
+
 #endif /*_DEFINES_H_*/

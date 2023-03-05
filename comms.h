@@ -16,4 +16,7 @@ uint8_t getCurrentInstructionData();
 uint32_t getCurrentInstructionNum();
 void moveToNextInstruction();
 
+extern int64_t avTicksStart;
+extern int64_t goalTicksTotal;
+
 #endif // _COMMS_H_

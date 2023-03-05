@@ -4,6 +4,8 @@
 #include "Control.h"
 #include "UsartAsFile.h"
 #include "VL6180x.h"
+#include "comms.h"
+#include "Encoder.h"
 
 
 /*
@@ -34,14 +36,16 @@ int kdA = KDA;
 */
 
 // 15:1
-#define KPV 1000
+#define KPV 1500
 #define KIV 0
-#define KDV 8000
+#define KDV 10000
 int kpV = KPV;
 int kiV = KIV;
 int kdV = KDV;
 
 int av_pwm = 0;
+
+#define GOOD_TICKS_BOUND 3
 
 static volatile int16_t goalHeading = 0;
 
@@ -124,18 +128,32 @@ void pidStraightLine() {
     int            currAngErr = 0;
     static int     lastAngErr = 0;
     static int64_t sumAngErr = 0;
-    int noAngChange = 0;
 
     int            currVelErr = 0;
     static int     lastVelErr = 0;
     static int64_t sumVelErr = 0;
 
-    fprintf(usartStream_Ptr, "%d\n", VL6180xGetDist(FRONT_LEFT));
+    static int goodTicks = 0;
 
-    if (VL6180xGetDist(FRONT_RIGHT) < 80 || VL6180xGetDist(FRONT_LEFT) < 80) {
-        //fprintf(usartStream_Ptr, " TRYING TO STOP - %d ", goalTpp);
+    int64_t avTicksNow;
+    getAverageEncoderTicks(&avTicksNow);
+
+    // if average ticks now == average ticks start + goal ticks total:
+        // goalTpp = 0;
+
+    //fprintf(usartStream_Ptr, "avTicksNow = %d\n",  (int) avTicksNow);
+    //fprintf(usartStream_Ptr, "\tsum = %d\n",  (int) avTicksStart + (int) goalTicksTotal);
+    if ((int) avTicksNow >= (int) avTicksStart + (int) goalTicksTotal) {
+        //fprintf(usartStream_Ptr, "STOPPED NOW\n");
         goalTpp = 0;
     }
+
+    //fprintf(usartStream_Ptr, "%d\n", VL6180xGetDist(FRONT_LEFT));
+
+    //if (VL6180xGetDist(FRONT_RIGHT) < 80 || VL6180xGetDist(FRONT_LEFT) < 80) {
+    //    //fprintf(usartStream_Ptr, " TRYING TO STOP - %d ", goalTpp);
+    //    goalTpp = 0;
+    //}
 
     if (!motors_on) {
         killMotors();
@@ -144,6 +162,7 @@ void pidStraightLine() {
         lastVelErr = 0;
         sumVelErr = 0;
         av_pwm = 0;
+        goodTicks = 0;
         goalHeading = bno055GetCurrHeading();
         return;
     }
@@ -152,13 +171,16 @@ void pidStraightLine() {
     while (currAngErr < -2880) currAngErr += 5760;
     while (currAngErr > +2880) currAngErr -= 5760;
 
-    noAngChange = (currAngErr == lastAngErr);
     if (currAngErr * lastAngErr <= 0) sumAngErr = 0;
-    if ((sumAngErr + currAngErr) * kiA < 9600 && (sumAngErr + currAngErr) * kiA > -9600)
+    if ((sumAngErr + currAngErr) * kiA < (300 << 5) && (sumAngErr + currAngErr) * kiA > -(300 << 5))
         sumAngErr += currAngErr;
 
     currVelErr = (goalTpp - currTpp);
     sumVelErr += currVelErr;
+
+    if (currAngErr > -2 && currAngErr < 2 && !currTpp && !goalTpp)
+        if (++goodTicks >= GOOD_TICKS_BOUND) 
+            motors_on = 0, fprintf(usartStream_Ptr, "good! motors stopped");
 
     int64_t angle_adj = ((int64_t)currAngErr * kpA + (int64_t)(currAngErr - lastAngErr) * kdA + (sumAngErr * kiA)) >> 5;
     int64_t speed_adj = ((int64_t)currVelErr * kpV + (int64_t)(currVelErr - lastVelErr) * kdV + (sumVelErr * kiV)) >> 5;

@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <util/atomic.h>
 
+int64_t avTicksStart = 0;
+int64_t goalTicksTotal = 0;
+
 typedef struct Command
 {
     uint8_t commType;
@@ -131,26 +134,29 @@ void commsReceiveTask(void)
         return;
     }
     
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+    if (tempLastCommand > g_s_commandBuf[1].commNum)
     {
-        // This is faster than filling a struct and copying by value
-        uint8_t ind = 1;
-        if (!g_s_commandBuf[0].commNum)
+        ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
         {
-            ind = 0;
-        }
-        g_s_commandBuf[ind].commNum = tempLastCommand;
-        if (tempAction & 0b10000000)
-        {
-            g_s_commandBuf[ind].commType = A_TYPE_MOVE;
-        }
-        else
-        {
-            g_s_commandBuf[ind].commType = A_TYPE_FACE;
-        }
-        g_s_commandBuf[ind].commData = tempAction & 0b1111111;
+            // This is faster than filling a struct and copying by value
+            uint8_t ind = 1;
+            if (!g_s_commandBuf[0].commNum)
+            {
+                ind = 0;
+            }
+            g_s_commandBuf[ind].commNum = tempLastCommand;
+            if (tempAction & 0b10000000)
+            {
+                g_s_commandBuf[ind].commType = A_TYPE_MOVE;
+            }
+            else
+            {
+                g_s_commandBuf[ind].commType = A_TYPE_FACE;
+            }
+            g_s_commandBuf[ind].commData = tempAction & 0b1111111;
 
-        gameState = tempGameState;
+            gameState = tempGameState;
+        }
     }
 
     // REMOVE THIS IT IS FOR DEBUGGING
@@ -210,7 +216,7 @@ void debug_comms_task(void)
     if (read_rdy)
     {
         k_inp[myindex] = 0;
-        myindex = 0;
+        myindex = 0; 
         k_name  = k_inp[0] | 32;
         k_val = strtol(k_inp+1, NULL, 10);
         modeChar = mode ? 'A' : 'V';
@@ -233,6 +239,10 @@ void debug_comms_task(void)
                 break;
             case 'm':
                 goalTpp = k_val;
+                goalTicksTotal = 120;
+                getAverageEncoderTicks(&avTicksStart);
+                fprintf(usartStream_Ptr, "goalTicksTotal = %d\n", (int) goalTicksTotal);
+                fprintf(usartStream_Ptr, "avTicksStart = %d\n",  (int) avTicksStart);
                 motors_on = 1;
                 fprintf(usartStream_Ptr, "goaltpp = %d\n", goalTpp);
                 break;
