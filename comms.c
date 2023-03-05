@@ -4,6 +4,7 @@
 #include "Control.h"
 #include "comms.h"
 #include "Defines.h"
+#include "Encoder.h"
 
 // Library Includes
 #include <avr/io.h>
@@ -239,10 +240,9 @@ void debug_comms_task(void)
                 break;
             case 'm':
                 goalTpp = k_val;
-                goalTicksTotal = 120;
                 getAverageEncoderTicks(&avTicksStart);
+                goalTicksTotal = ((k_val > 0) ? 128 : -128) + avTicksStart;
                 fprintf(usartStream_Ptr, "goalTicksTotal = %d\n", (int) goalTicksTotal);
-                fprintf(usartStream_Ptr, "avTicksStart = %d\n",  (int) avTicksStart);
                 motors_on = 1;
                 fprintf(usartStream_Ptr, "goaltpp = %d\n", goalTpp);
                 break;
@@ -251,6 +251,11 @@ void debug_comms_task(void)
                 fprintf(usartStream_Ptr, "rotation started\n");
                 motors_on = 1;
                 goalTpp = 0;
+                break;
+            case 'g':
+                setGoalHeading(bno055GetCurrHeading());
+                motors_on = 0;
+                fprintf(usartStream_Ptr, "recalibrated");
                 break;
             case 'w':
                 wallAlignRight();
@@ -266,7 +271,7 @@ void debug_comms_task(void)
                 kd = mode ? (&kdV) : (&kdA);
                 break;
             case '?':
-                fprintf(usartStream_Ptr, "kp%c = %d, ki%c = %d, kd%c = %d", modeChar(mode), *kp, modeChar(mode), *ki, modeChar(mode), *kd);
+                fprintf(usartStream_Ptr, "kp%c = %d, ki%c = %d, kd%c = %d, goalTicksTotal = %d\n", modeChar(mode), *kp, modeChar(mode), *ki, modeChar(mode), *kd, (int) goalTicksTotal);
                 motors_on = 0;
                 break;
             default:

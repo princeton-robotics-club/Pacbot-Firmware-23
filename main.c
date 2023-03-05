@@ -24,7 +24,7 @@
 // Tick buffer - low-pass filtering for encoders using a ring buffer
 #define TICK_BUFF_SIZE_BITS 2
 #define TICK_BUFF_SIZE (1 << TICK_BUFF_SIZE_BITS)
-volatile int32_t tickBuf[TICK_BUFF_SIZE];
+volatile int64_t tickBuf[TICK_BUFF_SIZE] = {0};
 volatile int tickBufIdx = 0;
 
 // Tpp = ticks per period, a measure of how fast the encoders are going
@@ -43,6 +43,7 @@ void debug_print(void)
 // Milliseconds since initialization
 volatile static uint32_t g_s_millis = 0;
 volatile static int8_t g_s_milliFlag = 0;
+volatile static int64_t cosErr;
 
 // This is run every ~1 ms
 void millisTask(void)
@@ -74,8 +75,8 @@ void millisTask(void)
     }
     
 
-    // Run PID every 10 milliseconds (offset by 2)
-    if (!((g_s_millis+2) % 10))
+    // Run PID every 10 milliseconds (offset by 4)
+    if (!((g_s_millis+4) % 10))
     {
 
         pidStraightLine();
@@ -85,14 +86,11 @@ void millisTask(void)
     if (!((g_s_millis+3) % 5))
     {
         // Uses a ring buffer to low-pass filter the encoder speeds
-        getAverageEncoderTicks((int32_t *) (tickBuf + tickBufIdx));
+        getAverageEncoderTicks((int64_t *) (tickBuf + tickBufIdx));
         currTpp = tickBuf[tickBufIdx] - tickBuf[(tickBufIdx + 1) % TICK_BUFF_SIZE];
+        if (!((goalTpp >= 0) ^ (tickBuf[tickBufIdx] >= goalTicksTotal)))
+            goalTpp = 0;
         tickBufIdx = (tickBufIdx + 1) % TICK_BUFF_SIZE;
-
-        // Cosine adjustment --> uses a second-order Taylor approximation for cosine
-        // to account for ticks "wasted" by not traveling perfectly straight
-        int64_t theta = bno055GetCurrHeading() - getGoalHeading();
-        goalTicksTotal += (5 * theta * theta * currTpp) >> (TICK_BUFF_SIZE_BITS + 23);
     }
 
     // Ask for Distance data on every 10 milliseconds (offset by 1)

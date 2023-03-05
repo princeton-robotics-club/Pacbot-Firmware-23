@@ -36,7 +36,7 @@ int kdA = KDA;
 */
 
 // 15:1
-#define KPV 150
+#define KPV 50
 #define KIV 0
 #define KDV 10000
 int kpV = KPV;
@@ -45,7 +45,7 @@ int kdV = KDV;
 
 int av_pwm = 0;
 
-#define GOOD_ITERS_BOUND 3
+#define GOOD_ITERS_BOUND 2
 
 static volatile int16_t goalHeading = 0;
 
@@ -134,20 +134,7 @@ void pidStraightLine() {
     static int64_t sumVelErr = 0;
 
     static int goodIters = 0;
-
-    int64_t avTicksNow;
-    getAverageEncoderTicks(&avTicksNow);
-
-    // if average ticks now == average ticks start + goal ticks total:
-        // goalTpp = 0;
-
-    //fprintf(usartStream_Ptr, "avTicksNow = %d\n",  (int) avTicksNow);
-    //fprintf(usartStream_Ptr, "\tsum = %d\n",  (int) avTicksStart + (int) goalTicksTotal);
-    if ((int) avTicksNow >= (int) avTicksStart + (int) goalTicksTotal) {
-        //fprintf(usartStream_Ptr, "STOPPED NOW\n");
-        goalTpp = 0;
-    }
-
+    
     //fprintf(usartStream_Ptr, "%d\n", VL6180xGetDist(FRONT_LEFT));
 
     //if (VL6180xGetDist(FRONT_RIGHT) < 80 || VL6180xGetDist(FRONT_LEFT) < 80) {
@@ -164,6 +151,7 @@ void pidStraightLine() {
         av_pwm = 0;
         goodIters = 0;
         goalHeading = bno055GetCurrHeading();
+        // goalTicksTotal = 0;
         return;
     }
 
@@ -182,12 +170,12 @@ void pidStraightLine() {
     sumVelErr += currVelErr;
 
     // Determines if the criteria are met to stop motors --> angle deviation needs to be small enough and motors must be correctly off
-    if (currAngErr > -2 && currAngErr < 2 && !currTpp && !goalTpp && ++goodIters >= GOOD_ITERS_BOUND) 
+    if (currAngErr > -2 && currAngErr < 2 && !currTpp && !goalTpp && +goodIters <= GOOD_ITERS_BOUND) 
         motors_on = 0, fprintf(usartStream_Ptr, "good! motors stopped");
     else goodIters = 0;
 
     int64_t angle_adj = ((int64_t)currAngErr * kpA + (int64_t)(currAngErr - lastAngErr) * kdA + (sumAngErr * kiA)) >> 5;
-    int64_t speed_adj = ((int64_t)currVelErr * kpV + (int64_t)(currVelErr - lastVelErr) * kdV + (sumVelErr * kiV)) >> 5;
+    int64_t speed_adj = ((int64_t)currVelErr * (goalTpp ? kpV : kpV * 50) + (int64_t)(currVelErr - lastVelErr) * kdV + (sumVelErr * kiV)) >> 5;
 
     av_pwm += speed_adj;
 
