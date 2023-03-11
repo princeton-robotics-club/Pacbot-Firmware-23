@@ -170,7 +170,7 @@ void pidStraightLine() {
     sumVelErr += currVelErr;
 
     // Determines if the criteria are met to stop motors --> angle deviation needs to be small enough and motors must be correctly off
-    if (currAngErr > -2 && currAngErr < 2 && !currTpp && !goalTpp && +goodIters <= GOOD_ITERS_BOUND) 
+    if (currAngErr > -2 && currAngErr < 2 && !currTpp && !goalTpp && ++goodIters <= GOOD_ITERS_BOUND) 
         motors_on = 0, fprintf(usartStream_Ptr, "good! motors stopped");
     else goodIters = 0;
 
