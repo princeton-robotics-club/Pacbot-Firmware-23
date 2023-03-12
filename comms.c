@@ -12,8 +12,8 @@
 #include <stdlib.h>
 #include <util/atomic.h>
 
-int64_t avTicksStart = 0;
-int64_t goalTicksTotal = 0;
+int16_t avTicksStart = 0;
+int16_t goalTicksTotal = 0;
 
 typedef struct Command
 {

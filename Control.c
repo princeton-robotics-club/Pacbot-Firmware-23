@@ -137,9 +137,9 @@ void wallAlignRight() {
     adjustHeading(dir * theta);
 }
 
-int64_t sumAngErr = 0;
-int64_t sumVelErr = 0;
-int64_t sumStopErr = 0;
+int32_t sumAngErr = 0;
+int32_t sumVelErr = 0;
+int32_t sumStopErr = 0;
 
 void resetSums()
 {
@@ -158,13 +158,13 @@ void pidOff()
 
 void pidStop()
 {
-    int currStopErr = 0;
-    static int lastStopErr = 0;
+    int16_t currStopErr = 0;
+    static int16_t lastStopErr = 0;
     
-    int currAngErr = 0;
-    static int lastAngErr = 0;
+    int16_t currAngErr = 0;
+    static int16_t lastAngErr = 0;
 
-    static int stoppedCount = 0;
+    static int16_t stoppedCount = 0;
 
     if (!currTpp)
     {
@@ -187,7 +187,7 @@ void pidStop()
         lastStopErr = currStopErr;
     }
 
-    int64_t speed_adj = ((int64_t)currStopErr * kpSTOP + (int64_t)(currStopErr - lastStopErr) * kdSTOP + (sumStopErr * kiSTOP)) >> 5;
+    int32_t speed_adj = ((int32_t)currStopErr * kpSTOP + (int32_t)(currStopErr - lastStopErr) * kdSTOP + (sumStopErr * kiSTOP)) >> 5;
 
 
     // Current angle error calculation --> we want between -180 deg and +180 deg for minimum turning
@@ -200,7 +200,7 @@ void pidStop()
     if ((sumAngErr + currAngErr) * kiROT < (300 << 5) && (sumAngErr + currAngErr) * kiROT > -(300 << 5))
         sumAngErr += currAngErr;
 
-    int64_t angle_adj = ((int64_t)currAngErr * kpROT + (int64_t)(currAngErr - lastAngErr) * kdROT + (sumAngErr * kiROT)) >> 5;
+    int16_t angle_adj = (currAngErr * kpROT + (currAngErr - lastAngErr) * kdROT + (sumAngErr * kiROT)) >> 5;
 
     setLeftMotorPower((int)speed_adj + (int)angle_adj);
     setRightMotorPower((int)speed_adj - (int)angle_adj);
@@ -212,11 +212,11 @@ void pidStop()
 
 void pidRotate()
 {
-    int        currAngErr = 0;
-    static int lastAngErr = 0;
+    int16_t        currAngErr = 0;
+    static int16_t lastAngErr = 0;
 
-    int            currVelErr = 0;
-    static int     lastVelErr = 0;
+    int16_t            currVelErr = 0;
+    static int16_t     lastVelErr = 0;
 
 
     // Current angle error calculation --> we want between -180 deg and +180 deg for minimum turning    
@@ -232,8 +232,8 @@ void pidRotate()
     currVelErr = getRightEncoderDist() + getLeftEncoderDist();
     sumVelErr += currVelErr;
 
-    int64_t angle_adj = ((int64_t)currAngErr * kpROT + (int64_t)(currAngErr - lastAngErr) * kdROT + (sumAngErr * kiROT)) >> 5;
-    int64_t speed_adj = ((int64_t)currVelErr * kpV + (int64_t)(currVelErr - lastVelErr) * kdV + (sumVelErr * kiV)) >> 5;
+    int32_t angle_adj = ((int32_t)currAngErr * kpROT + (int32_t)(currAngErr - lastAngErr) * kdROT + (sumAngErr * kiROT)) >> 5;
+    int32_t speed_adj = ((int32_t)currVelErr * kpV + (int32_t)(currVelErr - lastVelErr) * kdV + (sumVelErr * kiV)) >> 5;
 
     setLeftMotorPower((int)angle_adj);
     setRightMotorPower(0 - (int)angle_adj);
@@ -268,12 +268,12 @@ void pidRotate()
 // Returns a new pwm setting given target speed and current speed
 void pidStraightLine() {
 
-    int        currAngErr = 0;
-    static int lastAngErr = 0;
+    int16_t        currAngErr = 0;
+    static int16_t lastAngErr = 0;
     static int8_t closeIts = 0;
 
-    int            currVelErr = 0;
-    static int     lastVelErr = 0;
+    int16_t            currVelErr = 0;
+    static int16_t     lastVelErr = 0;
 
     if (VL6180xGetDist(FRONT_LEFT) < 50 || VL6180xGetDist(FRONT_RIGHT) < 50)
     {
@@ -313,8 +313,8 @@ void pidStraightLine() {
     currVelErr = -getRightEncoderDist() + getLeftEncoderDist();    
     sumVelErr += currVelErr;
 
-    int64_t angle_adj = ((int64_t)currAngErr * kpA + (int64_t)(currAngErr - lastAngErr) * kdA + (sumAngErr * kiA)) >> 5;
-    int64_t speed_adj = ((int64_t)currVelErr * kpV + (int64_t)(currVelErr - lastVelErr) * kdV + (sumVelErr * kiV)) >> 5;
+    int angle_adj = (currAngErr * kpA + (currAngErr - lastAngErr) * kdA + (sumAngErr * kiA)) >> 5;
+    int speed_adj = (currVelErr * kpV + (currVelErr - lastVelErr) * kdV + (sumVelErr * kiV)) >> 5;
     if (angle_adj > 250)
     {
         angle_adj = 250;
@@ -324,8 +324,8 @@ void pidStraightLine() {
         angle_adj = -250;
     }
     
-    setLeftMotorPower(av_pwm + (int)speed_adj + (int)angle_adj - 200);
-    setRightMotorPower(av_pwm - (int)speed_adj - (int)angle_adj + 200);
+    setLeftMotorPower(av_pwm + speed_adj + angle_adj - 200);
+    setRightMotorPower(av_pwm - speed_adj - angle_adj + 200);
 
     // if (currAngErr < 25 && currAngErr > -25)
     // {

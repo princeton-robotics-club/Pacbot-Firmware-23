@@ -9,7 +9,7 @@
 
 // Encoder-specific variables
 static uint8_t priorPins, currPins;
-static int64_t totalTicksLeft, totalTicksRight;
+static int16_t totalTicksLeft, totalTicksRight;
 
 // Called during every pin change interrupt (ISR = Interrupt Service Routine)
 ISR(PCINT0_vect) {
@@ -38,28 +38,28 @@ ISR(PCINT0_vect) {
 #endif
 }
 
-void getEncoderDistances(int64_t * encoderDistances) {
+void getEncoderDistances(int16_t * encoderDistances) {
 
     // Fill in the array from left to right
     encoderDistances[0] = totalTicksLeft  * ENCODER_NM_PER_TICK;
     encoderDistances[1] = totalTicksRight * ENCODER_NM_PER_TICK;
 }
 
-int64_t getRightEncoderDist(void)
+int16_t getRightEncoderDist(void)
 {
     return totalTicksRight;
 }
-int64_t getLeftEncoderDist(void)
+int16_t getLeftEncoderDist(void)
 {
     return totalTicksLeft;
 }
 
-void getAverageEncoderTicks(int64_t * avEncoderTicks) {
+void getAverageEncoderTicks(int16_t * avEncoderTicks) {
     
     *avEncoderTicks = (totalTicksLeft + totalTicksRight) >> 1;
 }
 
-int64_t getAverageEncoderTicksRet(void) {
+int16_t getAverageEncoderTicksRet(void) {
     
     return (totalTicksLeft + totalTicksRight) / 2;
 }
