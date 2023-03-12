@@ -21,12 +21,20 @@
 #define KIA 6
 #define KDA 600
 */
-#define KPA 80
-#define KIA 11
-#define KDA 1200
+#define KPA 0
+#define KIA 1
+#define KDA 64
 int kpA = KPA; // 120 7 1600
 int kiA = KIA;
 int kdA = KDA;
+
+
+#define KPROT 80
+#define KIROT 6
+#define KDROT 600
+int kpROT = KPROT;
+int kiROT = KIROT;
+int kdROT = KDROT;
 
 // 30:1
 /* 
@@ -36,12 +44,19 @@ int kdA = KDA;
 */
 
 // 15:1
-#define KPV 50
+#define KPV 800
 #define KIV 0
-#define KDV 10000
+#define KDV 800
 int kpV = KPV;
 int kiV = KIV;
 int kdV = KDV;
+
+#define KPSTOP 2500
+#define KISTOP 0
+#define KDSTOP 2500
+int kpSTOP = KPSTOP;
+int kiSTOP = KISTOP;
+int kdSTOP = KDSTOP;
 
 int av_pwm = 0;
 
@@ -122,38 +137,58 @@ void wallAlignRight() {
     adjustHeading(dir * theta);
 }
 
-// Returns a new pwm setting given target speed and current speed
-void pidStraightLine() {
+int64_t sumAngErr = 0;
+int64_t sumVelErr = 0;
+int64_t sumStopErr = 0;
 
-    int            currAngErr = 0;
-    static int     lastAngErr = 0;
-    static int64_t sumAngErr = 0;
+void resetSums()
+{
+    sumAngErr = 0;
+    sumVelErr = 0;
+    sumStopErr = 0;
+}
+static int8_t closeIts = 0;
+void pidOff()
+{
+    killMotors();
+    resetSums();
+    // resetEncoderDistances();
+    closeIts = 0;
+}
 
-    int            currVelErr = 0;
-    static int     lastVelErr = 0;
-    static int64_t sumVelErr = 0;
-
-    static int goodIters = 0;
+void pidStop()
+{
+    int currStopErr = 0;
+    static int lastStopErr = 0;
     
-    //fprintf(usartStream_Ptr, "%d\n", VL6180xGetDist(FRONT_LEFT));
+    int currAngErr = 0;
+    static int lastAngErr = 0;
 
-    //if (VL6180xGetDist(FRONT_RIGHT) < 80 || VL6180xGetDist(FRONT_LEFT) < 80) {
-    //    //fprintf(usartStream_Ptr, " TRYING TO STOP - %d ", goalTpp);
-    //    goalTpp = 0;
-    //}
+    static int stoppedCount = 0;
 
-    if (!motors_on) {
-        killMotors();
-        lastAngErr = 0;
-        sumAngErr = 0;
-        lastVelErr = 0;
-        sumVelErr = 0;
-        av_pwm = 0;
-        goodIters = 0;
-        goalHeading = bno055GetCurrHeading();
-        // goalTicksTotal = 0;
-        return;
+    if (!currTpp)
+    {
+        if (++stoppedCount > 3)
+        {
+            setActionMode(ACT_OFF);
+            return;
+        }
     }
+    else
+    {
+        stoppedCount = 0;
+    }
+    
+    // Current velocity error calculation --> uses low-pass filtered data, so integral term is less helpful
+    currStopErr = (0 - currTpp);
+    sumStopErr += currStopErr;
+    if (!lastStopErr)
+    {
+        lastStopErr = currStopErr;
+    }
+
+    int64_t speed_adj = ((int64_t)currStopErr * kpSTOP + (int64_t)(currStopErr - lastStopErr) * kdSTOP + (sumStopErr * kiSTOP)) >> 5;
+
 
     // Current angle error calculation --> we want between -180 deg and +180 deg for minimum turning
     currAngErr = (goalHeading - bno055GetCurrHeading());
@@ -162,32 +197,153 @@ void pidStraightLine() {
 
     // Calculates sum, capping its power output to 300
     if (currAngErr * lastAngErr <= 0) sumAngErr = 0;
-    if ((sumAngErr + currAngErr) * kiA < (300 << 5) && (sumAngErr + currAngErr) * kiA > -(300 << 5))
+    if ((sumAngErr + currAngErr) * kiROT < (300 << 5) && (sumAngErr + currAngErr) * kiROT > -(300 << 5))
         sumAngErr += currAngErr;
 
-    // Current velocity error calculation --> uses low-pass filtered data, so integral term is less helpful
-    currVelErr = (goalTpp - currTpp);
+    int64_t angle_adj = ((int64_t)currAngErr * kpROT + (int64_t)(currAngErr - lastAngErr) * kdROT + (sumAngErr * kiROT)) >> 5;
+
+    setLeftMotorPower((int)speed_adj + (int)angle_adj);
+    setRightMotorPower((int)speed_adj - (int)angle_adj);
+
+    lastStopErr = currStopErr;
+    lastAngErr = currAngErr;
+    fprintf(usartStream_Ptr, "currtpp %d\n", currTpp);
+}
+
+void pidRotate()
+{
+    int        currAngErr = 0;
+    static int lastAngErr = 0;
+
+    int            currVelErr = 0;
+    static int     lastVelErr = 0;
+
+
+    // Current angle error calculation --> we want between -180 deg and +180 deg for minimum turning    
+    currAngErr = (goalHeading - bno055GetCurrHeading());
+    while (currAngErr < -2880) currAngErr += 5760;
+    while (currAngErr > +2880) currAngErr -= 5760;
+
+    // Calculates sum, capping its power output to 300
+    if (currAngErr * lastAngErr <= 0) sumAngErr = 0;
+    if ((sumAngErr + currAngErr) * kiROT < (300 << 5) && (sumAngErr + currAngErr) * kiROT > -(300 << 5))
+        sumAngErr += currAngErr;
+
+    currVelErr = getRightEncoderDist() + getLeftEncoderDist();
     sumVelErr += currVelErr;
 
-    // Determines if the criteria are met to stop motors --> angle deviation needs to be small enough and motors must be correctly off
-    if (currAngErr > -2 && currAngErr < 2 && !currTpp && !goalTpp && +goodIters <= GOOD_ITERS_BOUND) 
-        motors_on = 0, fprintf(usartStream_Ptr, "good! motors stopped");
-    else goodIters = 0;
+    int64_t angle_adj = ((int64_t)currAngErr * kpROT + (int64_t)(currAngErr - lastAngErr) * kdROT + (sumAngErr * kiROT)) >> 5;
+    int64_t speed_adj = ((int64_t)currVelErr * kpV + (int64_t)(currVelErr - lastVelErr) * kdV + (sumVelErr * kiV)) >> 5;
 
-    int64_t angle_adj = ((int64_t)currAngErr * kpA + (int64_t)(currAngErr - lastAngErr) * kdA + (sumAngErr * kiA)) >> 5;
-    int64_t speed_adj = ((int64_t)currVelErr * (goalTpp ? kpV : kpV * 50) + (int64_t)(currVelErr - lastVelErr) * kdV + (sumVelErr * kiV)) >> 5;
+    setLeftMotorPower((int)angle_adj);
+    setRightMotorPower(0 - (int)angle_adj);
 
-    av_pwm += speed_adj;
-
-    //fprintf(usartStream_Ptr, "             [a] %d %d\n", currAngErr, (int)angle_adj);
-    //fprintf(usartStream_Ptr, "[v] %d %d\n", currVelErr, (int)speed_adj);
-
-    setLeftMotorPower(av_pwm + (int)angle_adj);
-    setRightMotorPower(av_pwm - (int)angle_adj);
-
+    if (currAngErr < 25 && currAngErr > -25)
+    {
+        closeIts++;
+        if (closeIts > 40)
+        {
+            if (getActionMode() == ACT_ROTATE)
+            {
+                resetEncoderDistances();
+                setActionMode(ACT_OFF);
+            }
+            else
+            {
+                pidOff();
+                resetEncoderDistances();
+                setActionMode(ACT_MOVE);
+            }
+        }
+    }
+    else
+    {
+        closeIts = 0;
+    }    
+    fprintf(usartStream_Ptr, "angerr %d\n", currAngErr);
     lastAngErr = currAngErr;
     lastVelErr = currVelErr;
-    // reset = 0;
+}
+
+// Returns a new pwm setting given target speed and current speed
+void pidStraightLine() {
+
+    int        currAngErr = 0;
+    static int lastAngErr = 0;
+    static int8_t closeIts = 0;
+
+    int            currVelErr = 0;
+    static int     lastVelErr = 0;
+
+    if (VL6180xGetDist(FRONT_LEFT) < 50 || VL6180xGetDist(FRONT_RIGHT) < 50)
+    {
+        setActionMode(ACT_ROTATE);
+        pidOff();
+        return;
+    }
+    if (getAverageEncoderTicksRet() > (goalTicksTotal - currTpp * 5))
+    {
+        setActionMode(ACT_STOP);
+        pidStop();
+        return;
+    }
+    
+    
+
+    // Current angle error calculation --> we want between -180 deg and +180 deg for minimum turning    
+    currAngErr = (goalHeading - bno055GetCurrHeading()); 
+    while (currAngErr < -2880) currAngErr += 5760;
+    while (currAngErr > +2880) currAngErr -= 5760;
+    if (currAngErr > 60 || currAngErr < -60)
+    {
+        sumAngErr = 0;
+        goalTicksTotal -= getAverageEncoderTicksRet();
+        setActionMode(ACT_MOVE_COR);
+        return;
+    }
+    if (!lastAngErr)
+    {
+        lastAngErr = currAngErr;
+    }
+
+    // Calculates sum, capping its power output to 300
+    if ((sumAngErr + currAngErr) * kiA < (450 << 5) && (sumAngErr + currAngErr) * kiA > -(450 << 5))
+        sumAngErr += currAngErr;
+
+    currVelErr = -getRightEncoderDist() + getLeftEncoderDist();    
+    sumVelErr += currVelErr;
+
+    int64_t angle_adj = ((int64_t)currAngErr * kpA + (int64_t)(currAngErr - lastAngErr) * kdA + (sumAngErr * kiA)) >> 5;
+    int64_t speed_adj = ((int64_t)currVelErr * kpV + (int64_t)(currVelErr - lastVelErr) * kdV + (sumVelErr * kiV)) >> 5;
+    if (angle_adj > 250)
+    {
+        angle_adj = 250;
+    }
+    if (angle_adj < -250)
+    {
+        angle_adj = -250;
+    }
+    
+    setLeftMotorPower(av_pwm + (int)speed_adj + (int)angle_adj - 200);
+    setRightMotorPower(av_pwm - (int)speed_adj - (int)angle_adj + 200);
+
+    // if (currAngErr < 25 && currAngErr > -25)
+    // {
+    //     closeIts++;
+    //     if (closeIts > 50)
+    //     {
+    //         setActionMode(ACT_OFF);
+    //     }
+    // }
+    // else
+    // {
+    //     closeIts = 0;
+    // }    
+    fprintf(usartStream_Ptr, "angerr %d, ", currAngErr);
+    fprintf(usartStream_Ptr, "goalTp %d\n", goalTicksTotal);
+    lastAngErr = currAngErr;
+    lastVelErr = currVelErr;
+
 }
 
 // Turns motors off

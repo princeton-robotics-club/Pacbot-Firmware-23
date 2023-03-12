@@ -12,8 +12,12 @@ void killMotors();
 void setGoalHeading(int16_t newG);
 void adjustHeading(int16_t headingDelta);
 void wallAlignRight();
+void pidRotate();
+void pidOff();
+void pidStop();
 
 int16_t getGoalHeading();
+void resetSums();
 
 extern int kpA;
 extern int kiA;

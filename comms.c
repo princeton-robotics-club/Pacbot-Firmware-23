@@ -221,7 +221,8 @@ void debug_comms_task(void)
         k_name  = k_inp[0] | 32;
         k_val = strtol(k_inp+1, NULL, 10);
         modeChar = mode ? 'A' : 'V';
-        
+        resetSums();
+        setActionMode(ACT_OFF);
         switch (k_name) {
             case 'p': 
                 *kp = k_val;
@@ -239,18 +240,20 @@ void debug_comms_task(void)
                 fprintf(usartStream_Ptr, "kd%c = %d\n", modeChar(mode), *kd);
                 break;
             case 'm':
-                goalTpp = k_val;
+                setActionMode(ACT_MOVE);
+                av_pwm = 650;
                 getAverageEncoderTicks(&avTicksStart);
-                goalTicksTotal = ((k_val > 0) ? 128 : -128) + avTicksStart;
+                goalTicksTotal = k_val + avTicksStart;
                 fprintf(usartStream_Ptr, "goalTicksTotal = %d\n", (int) goalTicksTotal);
                 motors_on = 1;
-                fprintf(usartStream_Ptr, "goaltpp = %d\n", goalTpp);
+                fprintf(usartStream_Ptr, "av_pwm = %d\n", av_pwm);
                 break;
             case 'r':
+                setActionMode(ACT_ROTATE);
                 adjustHeading(k_val << 4);
                 fprintf(usartStream_Ptr, "rotation started\n");
                 motors_on = 1;
-                goalTpp = 0;
+                av_pwm = 0;
                 break;
             case 'g':
                 setGoalHeading(bno055GetCurrHeading());

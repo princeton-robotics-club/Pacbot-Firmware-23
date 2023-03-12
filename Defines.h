@@ -16,4 +16,15 @@
 #define DIR_EAST  0b10
 #define DIR_WEST  0b11
 
+typedef enum act {
+    ACT_OFF,
+    ACT_ROTATE,
+    ACT_MOVE,
+    ACT_MOVE_COR,
+    ACT_STOP,
+} Action;
+
+void setActionMode(Action mode);
+Action getActionMode();
+
 #endif /*_DEFINES_H_*/

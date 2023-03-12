@@ -45,9 +45,23 @@ void getEncoderDistances(int64_t * encoderDistances) {
     encoderDistances[1] = totalTicksRight * ENCODER_NM_PER_TICK;
 }
 
+int64_t getRightEncoderDist(void)
+{
+    return totalTicksRight;
+}
+int64_t getLeftEncoderDist(void)
+{
+    return totalTicksLeft;
+}
+
 void getAverageEncoderTicks(int64_t * avEncoderTicks) {
     
     *avEncoderTicks = (totalTicksLeft + totalTicksRight) >> 1;
+}
+
+int64_t getAverageEncoderTicksRet(void) {
+    
+    return (totalTicksLeft + totalTicksRight) / 2;
 }
 
 void resetEncoderDistances() {

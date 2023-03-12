@@ -45,6 +45,17 @@ volatile static uint32_t g_s_millis = 0;
 volatile static int8_t g_s_milliFlag = 0;
 volatile static int64_t cosErr;
 
+volatile Action g_action_mode = ACT_OFF;
+void setActionMode(Action mode)
+{
+    g_action_mode = mode;
+}
+Action getActionMode()
+{
+    return g_action_mode;
+}
+
+
 // This is run every ~1 ms
 void millisTask(void)
 {
@@ -71,15 +82,29 @@ void millisTask(void)
 
     if (!(g_s_millis % 5))
     {
-        // commsTask();
+        // comms task
     }
     
 
     // Run PID every 10 milliseconds (offset by 4)
     if (!((g_s_millis+4) % 10))
     {
-
-        pidStraightLine();
+        switch (g_action_mode)
+        {
+        case ACT_ROTATE:
+        case ACT_MOVE_COR:
+            pidRotate();
+            break;
+        case ACT_MOVE:
+            pidStraightLine();
+            break;
+        case ACT_STOP:
+            pidStop();
+            break;
+        default:
+            pidOff();
+            break;
+        }
     }
 
     // Ask for Encoder data every 5 milliseconds (offset by 3)
