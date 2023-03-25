@@ -17,7 +17,7 @@ int16_t goalTicksTotal = 0;
 
 typedef struct Command
 {
-    uint8_t commType;
+    Action commType;
     uint8_t commData;
     uint32_t commNum;
 } PacbCommand;
@@ -25,9 +25,11 @@ typedef struct Command
 static volatile PacbCommand g_s_commandBuf[2] = {};
 
 static Gamestate gameState = GS_ON;
-static volatile uint32_t g_lastCommandSent = 0b00010000000100000001000000010000;
+static volatile uint32_t g_lastCommandSent = 0;
 // 1 if failed, 0 if succeeded
 static volatile uint8_t g_lastCommandFailed = TRUE;
+static volatile Direction g_s_targetCardinalDir = DIR_WEST;
+
 Gamestate getGameState()
 {
     return gameState;
@@ -46,8 +48,9 @@ uint32_t getCurrentInstructionNum()
 }
 void moveToNextInstruction()
 {
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) 
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
     {
+        g_lastCommandSent = g_s_commandBuf[0].commNum;
         g_s_commandBuf[0].commData = g_s_commandBuf[1].commData;
         g_s_commandBuf[0].commType = g_s_commandBuf[1].commType;
         g_s_commandBuf[0].commNum = g_s_commandBuf[1].commNum;
@@ -91,6 +94,7 @@ void commsReceiveTask(void)
         return;
     }
 
+    // b is for BOI
     int b = fgetc(usartStream_Ptr);
     // fputc(b, usartStream_Ptr);
     if (b != '|')
@@ -135,48 +139,104 @@ void commsReceiveTask(void)
         return;
     }
     
-    if (tempLastCommand > g_s_commandBuf[1].commNum)
+    if (tempLastCommand <= g_lastCommandSent || 
+    tempLastCommand <= g_s_commandBuf[1].commNum ||
+    tempLastCommand <= g_s_commandBuf[0].commNum)
     {
-        ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+        return;
+    }
+    
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+    {
+        // This is faster than filling a struct and copying by value
+        uint8_t ind = 1;
+        if (!g_s_commandBuf[0].commNum)
         {
-            // This is faster than filling a struct and copying by value
-            uint8_t ind = 1;
-            if (!g_s_commandBuf[0].commNum)
-            {
-                ind = 0;
-            }
-            g_s_commandBuf[ind].commNum = tempLastCommand;
-            if (tempAction & 0b10000000)
-            {
-                g_s_commandBuf[ind].commType = A_TYPE_MOVE;
-            }
-            else
-            {
-                g_s_commandBuf[ind].commType = A_TYPE_FACE;
-            }
-            g_s_commandBuf[ind].commData = tempAction & 0b1111111;
-
-            gameState = tempGameState;
+            ind = 0;
         }
+        g_s_commandBuf[ind].commNum = tempLastCommand;
+        if (tempAction & 0b10000000)
+        {
+            g_s_commandBuf[ind].commType = ACT_MOVE;
+            g_s_commandBuf[ind].commData = tempAction & 0b1111111;
+        }
+        else
+        {
+            g_s_commandBuf[ind].commType = ACT_ROTATE;
+            g_s_commandBuf[ind].commData = tempAction & 0b11;
+        }
+        
+        gameState = tempGameState;
     }
 
-    // REMOVE THIS IT IS FOR DEBUGGING
-#warning REMOVE_THE_NEXT_LINE_AT_SOME_POINT   
+//     // REMOVE THIS IT IS FOR DEBUGGING
+// #warning REMOVE_THE_NEXT_LINE_AT_SOME_POINT   
 
-    if (tempLastCommand > g_lastCommandSent)
-    {
-        g_lastCommandSent = tempLastCommand;
-    }
-
-    //fprintf(usartStream_Ptr, "HERE\n");
+//     if (tempLastCommand > g_lastCommandSent)
+//     {
+//         g_lastCommandSent = tempLastCommand;
+//     }
 
     return;
+}
+
+void commsUpdateModeTask(void)
+{
+    if (gameState == GS_OFF)
+    {
+        setActionMode(ACT_OFF);
+    }
+    if (getActionMode() != ACT_OFF)
+    {
+        return;
+    }
+    if (!g_s_commandBuf[0].commNum)
+    {
+        return;
+    }
+    
+    if (g_s_commandBuf[0].commType == ACT_ROTATE)
+    {
+        Direction dir = g_s_commandBuf[0].commData;
+        uint8_t diff = dir - g_s_targetCardinalDir;
+        fprintf(usartStream_Ptr, "diff: %d\n", diff);
+        if (diff > 0)
+        {
+            diff += 4;
+        }
+        else if (diff > 4)
+        {
+            diff -= 4;
+        }
+        adjustHeading((diff * 90) << 4);
+        g_s_targetCardinalDir = dir;
+        setActionMode(ACT_ROTATE);
+    }
+    else if (g_s_commandBuf->commType == ACT_MOVE)
+    {
+        int16_t dist = (g_s_commandBuf[0].commData & 0b111111);
+        int8_t dir = 1;
+        if (g_s_commandBuf[0].commData & 0b1000000)
+        {
+            dir = -1;
+        }
+        dist *= dir;
+        dist *= 255;
+        goalTicksTotal = getAverageEncoderTicksRet() + dist;
+        setActionMode(ACT_MOVE);
+    }
+    else
+    {
+        fprintf(usartStream_Ptr, "WE SHOULDN'T BE HERE\n");
+    }
+        
 }
 
 void commsTask(void)
 {
     commsSendTask();
     commsReceiveTask();
+    commsUpdateModeTask();
     return;
 }
 

@@ -12,6 +12,8 @@ void killMotors();
 void setGoalHeading(int16_t newG);
 void adjustHeading(int16_t headingDelta);
 void wallAlignRight();
+void wallAlignLeft();
+void wallAlignTest();
 void pidRotate();
 void pidOff();
 void pidStop();

@@ -3,7 +3,9 @@
 #define _COMMS_H_
 
 void commsTask(void);
+void commsReceiveTask(void);
 void debug_comms_task(void);
+void commsUpdateModeTask(void);
 
 typedef enum gs {
     GS_ON,

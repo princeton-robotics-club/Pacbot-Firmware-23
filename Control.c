@@ -53,12 +53,12 @@ int kdV = KDV;
 
 #define KPSTOP 2500
 #define KISTOP 0
-#define KDSTOP 2500
+#define KDSTOP 1200
 int kpSTOP = KPSTOP;
 int kiSTOP = KISTOP;
 int kdSTOP = KDSTOP;
 
-int av_pwm = 0;
+int av_pwm = 650;
 
 #define GOOD_ITERS_BOUND 2
 
@@ -87,16 +87,89 @@ void adjustHeading(int16_t headingDelta) {
         goalHeading -= 5760;
 }
 
+void wallAlignTest()
+{
+    if (VL6180xGetDist(RIGHT_FRONT) < 50 && VL6180xGetDist(LEFT_FRONT) < 50)
+    {
+        adjustHeading(VL6180xGetDist(RIGHT_FRONT) - 50);
+        adjustHeading(50 - VL6180xGetDist(LEFT_FRONT));
+        return;
+    }
+    if (VL6180xGetDist(RIGHT_FRONT) < 100)
+    {
+        wallAlignRight();
+        adjustHeading(VL6180xGetDist(RIGHT_FRONT) - 50);
+        return;
+    }
+    if (VL6180xGetDist(LEFT_FRONT) < 100)
+    {
+        wallAlignLeft();
+        adjustHeading(50 - VL6180xGetDist(LEFT_FRONT));
+        return;
+    }
+    
+}
+
 void wallAlignRight() {
     int rfront = VL6180xGetDist(RIGHT_FRONT);
     int rback = VL6180xGetDist(RIGHT_BACK);
 
     // Past a certain distance on the sensors, stop trying to wall orient
-    if (rfront > 190 || rback > 190)
+    if (rfront > 60 || rback > 60)
         return;
 
     // Calculate the difference in the distances from both sides
     int diff = getDistDiffRight();
+
+    // Determines which way the robot has to rotate
+    int dir = 1;
+    if (diff < 0) {
+        diff = -diff; 
+        dir = -dir;
+    }
+    
+    // Angle correction using a linear approximation to arctan
+    // I got this by doing fun Excel spreadsheets and rounding to
+    // the nearest quarter degree - I will add more documentation later
+    // --> this code is capable of correcting up to a 50 degree rotation
+    int theta = 0;
+    if (diff <= 1)
+        theta = 18 * diff;
+    else if (diff <= 11)
+        theta = 1 + 18 * diff;
+    else if (diff <= 17)
+        theta = 12 + 17 * diff;
+    else if (diff <= 21)
+        theta = 29 + 16 * diff;
+    else if (diff <= 26)
+        theta = 50 + 15 * diff;
+    else if (diff <= 30)
+        theta = 70 + 14 * diff;
+    else if (diff <= 34)
+        theta = 106 + 13 * diff;
+    else if (diff <= 38)
+        theta = 140 + 12 * diff;
+    else if (diff <= 44)
+        theta = 178 + 11 * diff;
+    else if (diff <= 48)
+        theta = 222 + 10 * diff;
+    else if (diff <= 54)
+        theta = 270 + 9  * diff;
+
+    // Adjust the heading accordingly
+    adjustHeading(dir * theta);
+}
+
+void wallAlignLeft() {
+    int lfront = VL6180xGetDist(LEFT_FRONT);
+    int lback = VL6180xGetDist(LEFT_BACK);
+
+    // Past a certain distance on the sensors, stop trying to wall orient
+    if (lfront > 60 || lback > 60)
+        return;
+
+    // Calculate the difference in the distances from both sides
+    int diff = getDistDiffLeft();
 
     // Determines which way the robot has to rotate
     int dir = 1;
@@ -171,6 +244,11 @@ void pidStop()
         if (++stoppedCount > 3)
         {
             setActionMode(ACT_OFF);
+
+            // HERE
+            moveToNextInstruction();
+            //
+
             return;
         }
     }
@@ -241,16 +319,20 @@ void pidRotate()
     if (currAngErr < 25 && currAngErr > -25)
     {
         closeIts++;
-        if (closeIts > 40)
+        if (closeIts > 10)
         {
             if (getActionMode() == ACT_ROTATE)
             {
                 resetEncoderDistances();
                 setActionMode(ACT_OFF);
+                // HERE
+                moveToNextInstruction();
+                //
             }
             else
             {
                 pidOff();
+                goalTicksTotal -= getAverageEncoderTicksRet();
                 resetEncoderDistances();
                 setActionMode(ACT_MOVE);
             }
@@ -277,7 +359,7 @@ void pidStraightLine() {
 
     if (VL6180xGetDist(FRONT_LEFT) < 50 || VL6180xGetDist(FRONT_RIGHT) < 50)
     {
-        setActionMode(ACT_ROTATE);
+        setActionMode(ACT_STOP);
         pidOff();
         return;
     }
@@ -294,10 +376,9 @@ void pidStraightLine() {
     currAngErr = (goalHeading - bno055GetCurrHeading()); 
     while (currAngErr < -2880) currAngErr += 5760;
     while (currAngErr > +2880) currAngErr -= 5760;
-    if (currAngErr > 60 || currAngErr < -60)
+    if (currAngErr > 90 || currAngErr < -90)
     {
         sumAngErr = 0;
-        goalTicksTotal -= getAverageEncoderTicksRet();
         setActionMode(ACT_MOVE_COR);
         return;
     }
@@ -306,7 +387,6 @@ void pidStraightLine() {
         lastAngErr = currAngErr;
     }
 
-    // Calculates sum, capping its power output to 300
     if ((sumAngErr + currAngErr) * kiA < (450 << 5) && (sumAngErr + currAngErr) * kiA > -(450 << 5))
         sumAngErr += currAngErr;
 

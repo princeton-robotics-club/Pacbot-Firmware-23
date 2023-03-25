@@ -35,7 +35,7 @@ volatile int16_t goalTpp = 0;
 void debug_print(void)
 {
     // fprintf(usartStream_Ptr, "rf: %d, ", VL6180xGetDist(RIGHT_FRONT));
-    // fprintf(usartStream_Ptr, "rb: %d\n", VL6180xGetDist(RIGHT_BACK));
+    // fprintf(usartStream_Ptr, "ang: %d\n", bno055GetCurrHeading());
 
     return;
 }
@@ -47,6 +47,10 @@ volatile static int8_t g_s_milliFlag = 0;
 volatile Action g_action_mode = ACT_OFF;
 void setActionMode(Action mode)
 {
+    if (mode == ACT_MOVE)
+    {
+        wallAlignTest(); 
+    }
     g_action_mode = mode;
 }
 Action getActionMode()
@@ -81,7 +85,9 @@ void millisTask(void)
 
     if (!(g_s_millis % 5))
     {
-        // comms task
+        // commsTask();
+        // commsReceiveTask();
+        // commsUpdateModeTask();
     }
     
 
@@ -185,7 +191,15 @@ int main(void)
 
     // Initializes motors
     motorsInit();
-    
+
+    // Start the goal heading at the starting angle
+    I2CInstruction_ID firstAngBack = bno055Task();
+    while (I2CBufferContains(firstAngBack))
+    {
+        I2CTask();
+    }
+    setGoalHeading(bno055GetCurrHeading());
+
     // Main loop
     while (1) 
     {

@@ -46,7 +46,7 @@ I2CInstruction_ID bno055GetAllEuler(uint8_t * out);
 /* Converts an euler angle uint8_t pair into a float */
 void fusionRawToFormatted(uint8_t  * raw, double * formatted);
 
-int bno055Task(void);
+I2CInstruction_ID bno055Task(void);
 
 uint16_t bno055GetCurrHeading(void);
 
