@@ -46,7 +46,7 @@ int kdROT = KDROT;
 // 15:1
 #define KPV 800
 #define KIV 0
-#define KDV 800
+#define KDV 2400
 int kpV = KPV;
 int kiV = KIV;
 int kdV = KDV;
@@ -58,7 +58,8 @@ int kpSTOP = KPSTOP;
 int kiSTOP = KISTOP;
 int kdSTOP = KDSTOP;
 
-int av_pwm = 650;
+#define AV_PWM_MAX 1400
+int av_pwm = AV_PWM_MAX;
 
 #define GOOD_ITERS_BOUND 2
 
@@ -89,24 +90,26 @@ void adjustHeading(int16_t headingDelta) {
 
 void wallAlignTest()
 {
-    if (VL6180xGetDist(RIGHT_FRONT) < 50 && VL6180xGetDist(LEFT_FRONT) < 50)
-    {
-        adjustHeading(VL6180xGetDist(RIGHT_FRONT) - 50);
-        adjustHeading(50 - VL6180xGetDist(LEFT_FRONT));
-        return;
-    }
-    if (VL6180xGetDist(RIGHT_FRONT) < 100)
-    {
-        wallAlignRight();
-        adjustHeading(VL6180xGetDist(RIGHT_FRONT) - 50);
-        return;
-    }
-    if (VL6180xGetDist(LEFT_FRONT) < 100)
-    {
-        wallAlignLeft();
-        adjustHeading(50 - VL6180xGetDist(LEFT_FRONT));
-        return;
-    }
+    // wallAlignLeft();
+    // wallAlignRight();
+    // if (VL6180xGetDist(RIGHT_FRONT) < 50 && VL6180xGetDist(LEFT_FRONT) < 50)
+    // {
+    //     adjustHeading(VL6180xGetDist(RIGHT_FRONT) - 50);
+    //     adjustHeading(50 - VL6180xGetDist(LEFT_FRONT));
+    //     return;
+    // }
+    // if (VL6180xGetDist(RIGHT_FRONT) < 100)
+    // {
+    //     wallAlignRight();
+    //     adjustHeading(VL6180xGetDist(RIGHT_FRONT) - 50);
+    //     return;
+    // }
+    // if (VL6180xGetDist(LEFT_FRONT) < 100)
+    // {
+    //     wallAlignLeft();
+    //     adjustHeading(50 - VL6180xGetDist(LEFT_FRONT));
+    //     return;
+    // }
     
 }
 
@@ -115,7 +118,7 @@ void wallAlignRight() {
     int rback = VL6180xGetDist(RIGHT_BACK);
 
     // Past a certain distance on the sensors, stop trying to wall orient
-    if (rfront > 60 || rback > 60)
+    if (rfront > 40 || rback > 40)
         return;
 
     // Calculate the difference in the distances from both sides
@@ -285,7 +288,7 @@ void pidStop()
 
     lastStopErr = currStopErr;
     lastAngErr = currAngErr;
-    fprintf(usartStream_Ptr, "currtpp %d\n", currTpp);
+    // fprintf(usartStream_Ptr, "currtpp %d\n", currTpp);
 }
 
 void pidRotate()
@@ -342,7 +345,7 @@ void pidRotate()
     {
         closeIts = 0;
     }    
-    fprintf(usartStream_Ptr, "angerr %d\n", currAngErr);
+    // fprintf(usartStream_Ptr, "angerr %d\n", currAngErr);
     lastAngErr = currAngErr;
     lastVelErr = currVelErr;
 }
@@ -357,22 +360,6 @@ void pidStraightLine() {
     int16_t            currVelErr = 0;
     static int16_t     lastVelErr = 0;
 
-    if (VL6180xGetDist(FRONT_LEFT) < 50 || VL6180xGetDist(FRONT_RIGHT) < 50)
-    {
-        setActionMode(ACT_STOP);
-        pidOff();
-        return;
-    }
-    if (getAverageEncoderTicksRet() > (goalTicksTotal - currTpp * 5))
-    {
-        setActionMode(ACT_STOP);
-        pidStop();
-        return;
-    }
-    
-    
-
-    // Current angle error calculation --> we want between -180 deg and +180 deg for minimum turning    
     currAngErr = (goalHeading - bno055GetCurrHeading()); 
     while (currAngErr < -2880) currAngErr += 5760;
     while (currAngErr > +2880) currAngErr -= 5760;
@@ -382,6 +369,24 @@ void pidStraightLine() {
         setActionMode(ACT_MOVE_COR);
         return;
     }
+
+    if (VL6180xGetDist(FRONT_LEFT) < 50 || VL6180xGetDist(FRONT_RIGHT) < 50)
+    {
+        setActionMode(ACT_STOP);
+        pidStop();
+        return;
+    }
+    if (getAverageEncoderTicksRet() > (goalTicksTotal - currTpp * 5))
+    {
+        setActionMode(ACT_STOP);
+        pidStop();
+        return;
+    }
+    
+    // wallAlignTest();
+
+    // Current angle error calculation --> we want between -180 deg and +180 deg for minimum turning    
+
     if (!lastAngErr)
     {
         lastAngErr = currAngErr;
@@ -402,8 +407,8 @@ void pidStraightLine() {
     if (angle_adj < -250)
     {
         angle_adj = -250;
-    }
-    
+    }    
+
     setLeftMotorPower(av_pwm + speed_adj + angle_adj - 200);
     setRightMotorPower(av_pwm - speed_adj - angle_adj + 200);
 
@@ -419,8 +424,7 @@ void pidStraightLine() {
     // {
     //     closeIts = 0;
     // }    
-    fprintf(usartStream_Ptr, "angerr %d, ", currAngErr);
-    fprintf(usartStream_Ptr, "goalTp %d\n", goalTicksTotal);
+    // fprintf(usartStream_Ptr, "angerr %d, ", currAngErr);
     lastAngErr = currAngErr;
     lastVelErr = currVelErr;
 

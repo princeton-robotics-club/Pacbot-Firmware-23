@@ -35,7 +35,7 @@ volatile int16_t goalTpp = 0;
 void debug_print(void)
 {
     // fprintf(usartStream_Ptr, "rf: %d, ", VL6180xGetDist(RIGHT_FRONT));
-    // fprintf(usartStream_Ptr, "ang: %d\n", bno055GetCurrHeading());
+    // fprintf(usartStream_Ptr, "dir: %d\n", g_s_targetCardinalDir);
 
     return;
 }
@@ -85,7 +85,7 @@ void millisTask(void)
 
     if (!(g_s_millis % 5))
     {
-        // commsTask();
+        commsTask();
         // commsReceiveTask();
         // commsUpdateModeTask();
     }
@@ -203,7 +203,7 @@ int main(void)
     // Main loop
     while (1) 
     {
-        debug_comms_task();
+        // debug_comms_task();
         I2CTask();
     }
 }

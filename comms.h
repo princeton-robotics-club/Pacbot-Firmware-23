@@ -20,5 +20,6 @@ void moveToNextInstruction();
 
 extern int16_t avTicksStart;
 extern int16_t goalTicksTotal;
+extern volatile Direction g_s_targetCardinalDir;
 
 #endif // _COMMS_H_

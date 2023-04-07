@@ -28,7 +28,7 @@ static Gamestate gameState = GS_ON;
 static volatile uint32_t g_lastCommandSent = 0;
 // 1 if failed, 0 if succeeded
 static volatile uint8_t g_lastCommandFailed = TRUE;
-static volatile Direction g_s_targetCardinalDir = DIR_WEST;
+volatile Direction g_s_targetCardinalDir = DIR_WEST;
 
 Gamestate getGameState()
 {
@@ -58,7 +58,7 @@ void moveToNextInstruction()
     }
 }
 
-/* This function uses fputc(char, usartStream_Ptr) to send the
+/* This function uses fputc(char, usartStream_Ptr) to send thefg
  * following messages to the offboard computer 
  * '|' g_lastCommandSent[3:0] S/F '\n' */
 // Should have six calls to function fputc
@@ -109,6 +109,7 @@ void commsReceiveTask(void)
         // fputc(b, usartStream_Ptr);
         if (b == '\n')
         {
+            fprintf(usartStream_Ptr, "BadCommRec");
             return;
         }
         tempLastCommand |= ((uint32_t)b) << i;
@@ -119,6 +120,7 @@ void commsReceiveTask(void)
     // fputc(b, usartStream_Ptr);
     if (b == '\n')
     {
+        fprintf(usartStream_Ptr, "BadCommRec");
         return;
     }
     tempGameState = b;
@@ -128,6 +130,7 @@ void commsReceiveTask(void)
     // fputc(b, usartStream_Ptr);
     if (b == '\n')
     {
+        fprintf(usartStream_Ptr, "BadCommRec");
         return;
     }
     tempAction = b;
@@ -136,6 +139,7 @@ void commsReceiveTask(void)
     // fputc(b, usartStream_Ptr);
     if (b != '\n')
     {
+        fprintf(usartStream_Ptr, "BadCommRec");
         return;
     }
     
@@ -149,6 +153,20 @@ void commsReceiveTask(void)
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
     {
         // This is faster than filling a struct and copying by value
+        gameState = tempGameState;
+        if (tempGameState == GS_OFF)
+        {
+            g_s_commandBuf[0].commNum = 0;
+            g_s_commandBuf[0].commData = 0;
+            g_s_commandBuf[0].commType = 0;
+            g_s_commandBuf[1].commNum = 0;
+            g_s_commandBuf[1].commData = 0;
+            g_s_commandBuf[1].commType = 0;
+            commsUpdateModeTask();
+            setGoalHeading(bno055GetCurrHeading());
+            return;
+        }
+        
         uint8_t ind = 1;
         if (!g_s_commandBuf[0].commNum)
         {
@@ -165,8 +183,6 @@ void commsReceiveTask(void)
             g_s_commandBuf[ind].commType = ACT_ROTATE;
             g_s_commandBuf[ind].commData = tempAction & 0b11;
         }
-        
-        gameState = tempGameState;
     }
 
 //     // REMOVE THIS IT IS FOR DEBUGGING
@@ -185,6 +201,7 @@ void commsUpdateModeTask(void)
     if (gameState == GS_OFF)
     {
         setActionMode(ACT_OFF);
+        return;
     }
     if (getActionMode() != ACT_OFF)
     {
@@ -199,7 +216,7 @@ void commsUpdateModeTask(void)
     {
         Direction dir = g_s_commandBuf[0].commData;
         uint8_t diff = dir - g_s_targetCardinalDir;
-        fprintf(usartStream_Ptr, "diff: %d\n", diff);
+        // fprintf(usartStream_Ptr, "diff: %d\n", diff);
         if (diff > 0)
         {
             diff += 4;
@@ -210,9 +227,10 @@ void commsUpdateModeTask(void)
         }
         adjustHeading((diff * 90) << 4);
         g_s_targetCardinalDir = dir;
-        setActionMode(ACT_ROTATE);
+        goalTicksTotal = getAverageEncoderTicksRet() + 255;
+        setActionMode(ACT_MOVE);
     }
-    else if (g_s_commandBuf->commType == ACT_MOVE)
+    else if (g_s_commandBuf[0].commType == ACT_MOVE)
     {
         int16_t dist = (g_s_commandBuf[0].commData & 0b111111);
         int8_t dir = 1;
@@ -301,7 +319,6 @@ void debug_comms_task(void)
                 break;
             case 'm':
                 setActionMode(ACT_MOVE);
-                av_pwm = 650;
                 getAverageEncoderTicks(&avTicksStart);
                 goalTicksTotal = k_val + avTicksStart;
                 fprintf(usartStream_Ptr, "goalTicksTotal = %d\n", (int) goalTicksTotal);
@@ -313,7 +330,6 @@ void debug_comms_task(void)
                 adjustHeading(k_val << 4);
                 fprintf(usartStream_Ptr, "rotation started\n");
                 motors_on = 1;
-                av_pwm = 0;
                 break;
             case 'g':
                 setGoalHeading(bno055GetCurrHeading());
