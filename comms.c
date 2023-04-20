@@ -153,6 +153,12 @@ void commsReceiveTask(void)
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
     {
         // This is faster than filling a struct and copying by value
+        if (gameState == GS_OFF)
+        {
+            g_s_targetCardinalDir = DIR_WEST;
+            setGoalHeading(bno055GetCurrHeading());
+        }
+        
         gameState = tempGameState;
         if (tempGameState == GS_OFF)
         {
@@ -175,12 +181,12 @@ void commsReceiveTask(void)
         g_s_commandBuf[ind].commNum = tempLastCommand;
         if (tempAction & 0b10000000)
         {
-            g_s_commandBuf[ind].commType = ACT_MOVE;
-            g_s_commandBuf[ind].commData = tempAction & 0b1111111;
+            g_s_commandBuf[ind].commType = ACT_MOVE_BW;
+            g_s_commandBuf[ind].commData = tempAction & 0b11;
         }
         else
         {
-            g_s_commandBuf[ind].commType = ACT_ROTATE;
+            g_s_commandBuf[ind].commType = ACT_MOVE;
             g_s_commandBuf[ind].commData = tempAction & 0b11;
         }
     }
@@ -212,7 +218,7 @@ void commsUpdateModeTask(void)
         return;
     }
     
-    if (g_s_commandBuf[0].commType == ACT_ROTATE)
+    if (g_s_commandBuf[0].commType == ACT_MOVE_BW)
     {
         Direction dir = g_s_commandBuf[0].commData;
         uint8_t diff = dir - g_s_targetCardinalDir;
@@ -227,27 +233,44 @@ void commsUpdateModeTask(void)
         }
         adjustHeading((diff * 90) << 4);
         g_s_targetCardinalDir = dir;
-        goalTicksTotal = getAverageEncoderTicksRet() + 255;
-        setActionMode(ACT_MOVE);
+        if (goalTicksTotal > 0)
+        {
+            goalTicksTotal = 0;
+            resetEncoderDistances();
+        }
+        goalTicksTotal = getAverageEncoderTicks() - 255;
+        wallAlignTest();
+        setActionMode(ACT_MOVE_COR_BW);
     }
     else if (g_s_commandBuf[0].commType == ACT_MOVE)
     {
-        int16_t dist = (g_s_commandBuf[0].commData & 0b111111);
-        int8_t dir = 1;
-        if (g_s_commandBuf[0].commData & 0b1000000)
+        Direction dir = g_s_commandBuf[0].commData;
+        uint8_t diff = dir - g_s_targetCardinalDir;
+        // fprintf(usartStream_Ptr, "diff: %d\n", diff);
+        if (diff > 0)
         {
-            dir = -1;
+            diff += 4;
         }
-        dist *= dir;
-        dist *= 255;
-        goalTicksTotal = getAverageEncoderTicksRet() + dist;
-        setActionMode(ACT_MOVE);
+        else if (diff > 4)
+        {
+            diff -= 4;
+        }
+        adjustHeading((diff * 90) << 4);
+        g_s_targetCardinalDir = dir;
+        if (goalTicksTotal < 0)
+        {
+            goalTicksTotal = 0;
+            resetEncoderDistances();
+        }
+        goalTicksTotal = getAverageEncoderTicks() + 255;
+        wallAlignTest();
+        setActionMode(ACT_MOVE_COR);
     }
     else
     {
-        fprintf(usartStream_Ptr, "WE SHOULDN'T BE HERE\n");
+        fprintf(usartStream_Ptr, "KEVIN SAID BRUH\n");
     }
-        
+
 }
 
 void commsTask(void)
@@ -318,8 +341,9 @@ void debug_comms_task(void)
                 fprintf(usartStream_Ptr, "kd%c = %d\n", modeChar(mode), *kd);
                 break;
             case 'm':
+                wallAlignTest();
                 setActionMode(ACT_MOVE);
-                getAverageEncoderTicks(&avTicksStart);
+                avTicksStart = getAverageEncoderTicks();
                 goalTicksTotal = k_val + avTicksStart;
                 fprintf(usartStream_Ptr, "goalTicksTotal = %d\n", (int) goalTicksTotal);
                 motors_on = 1;

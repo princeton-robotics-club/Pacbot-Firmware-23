@@ -6,7 +6,7 @@
 #include "VL6180x.h"
 #include "comms.h"
 #include "Encoder.h"
-
+#include <stdlib.h>
 
 /*
 #define KP 28.5
@@ -58,7 +58,7 @@ int kpSTOP = KPSTOP;
 int kiSTOP = KISTOP;
 int kdSTOP = KDSTOP;
 
-#define AV_PWM_MAX 1400
+#define AV_PWM_MAX 1200
 int av_pwm = AV_PWM_MAX;
 
 #define GOOD_ITERS_BOUND 2
@@ -90,27 +90,20 @@ void adjustHeading(int16_t headingDelta) {
 
 void wallAlignTest()
 {
-    // wallAlignLeft();
-    // wallAlignRight();
-    // if (VL6180xGetDist(RIGHT_FRONT) < 50 && VL6180xGetDist(LEFT_FRONT) < 50)
-    // {
-    //     adjustHeading(VL6180xGetDist(RIGHT_FRONT) - 50);
-    //     adjustHeading(50 - VL6180xGetDist(LEFT_FRONT));
-    //     return;
-    // }
-    // if (VL6180xGetDist(RIGHT_FRONT) < 100)
-    // {
-    //     wallAlignRight();
-    //     adjustHeading(VL6180xGetDist(RIGHT_FRONT) - 50);
-    //     return;
-    // }
-    // if (VL6180xGetDist(LEFT_FRONT) < 100)
-    // {
-    //     wallAlignLeft();
-    //     adjustHeading(50 - VL6180xGetDist(LEFT_FRONT));
-    //     return;
-    // }
+    wallAlignRight();
+    wallAlignLeft();
     
+    // fprintf(usartStream_Ptr, "FR: %d\n", VL6180xGetDist(RIGHT_FRONT));
+    // if (VL6180xGetDist(RIGHT_FRONT) < 50 || VL6180xGetDist(RIGHT_BACK) < 50)
+    // {
+    //     adjustHeading(VL6180xGetDist(RIGHT_FRONT) - 50);
+    //     return;
+    // }
+    // if (VL6180xGetDist(LEFT_FRONT) < 50 || VL6180xGetDist(LEFT_BACK) < 50)
+    // {
+    //     adjustHeading(50 - VL6180xGetDist(LEFT_FRONT));
+    //     return;
+    // }
 }
 
 void wallAlignRight() {
@@ -118,74 +111,96 @@ void wallAlignRight() {
     int rback = VL6180xGetDist(RIGHT_BACK);
 
     // Past a certain distance on the sensors, stop trying to wall orient
-    if (rfront > 40 || rback > 40)
+    if (rfront > 80 || rback > 80)
         return;
 
     // Calculate the difference in the distances from both sides
     int diff = getDistDiffRight();
 
     // Determines which way the robot has to rotate
-    int dir = 1;
-    if (diff < 0) {
-        diff = -diff; 
-        dir = -dir;
-    }
     
-    // Angle correction using a linear approximation to arctan
-    // I got this by doing fun Excel spreadsheets and rounding to
-    // the nearest quarter degree - I will add more documentation later
-    // --> this code is capable of correcting up to a 50 degree rotation
-    int theta = 0;
-    if (diff <= 1)
-        theta = 18 * diff;
-    else if (diff <= 11)
-        theta = 1 + 18 * diff;
-    else if (diff <= 17)
-        theta = 12 + 17 * diff;
-    else if (diff <= 21)
-        theta = 29 + 16 * diff;
-    else if (diff <= 26)
-        theta = 50 + 15 * diff;
-    else if (diff <= 30)
-        theta = 70 + 14 * diff;
-    else if (diff <= 34)
-        theta = 106 + 13 * diff;
-    else if (diff <= 38)
-        theta = 140 + 12 * diff;
-    else if (diff <= 44)
-        theta = 178 + 11 * diff;
-    else if (diff <= 48)
-        theta = 222 + 10 * diff;
-    else if (diff <= 54)
-        theta = 270 + 9  * diff;
+    // Calculate the angle adjustment
+    int adjustment = angleAdjust(diff);
 
     // Adjust the heading accordingly
-    adjustHeading(dir * theta);
+    adjustHeading(adjustment);
 }
 
 void wallAlignLeft() {
-    int lfront = VL6180xGetDist(LEFT_FRONT);
-    int lback = VL6180xGetDist(LEFT_BACK);
+    int lfront = VL6180xGetDist(LEFT_BACK);
+    int lback = VL6180xGetDist(LEFT_FRONT);
 
     // Past a certain distance on the sensors, stop trying to wall orient
-    if (lfront > 60 || lback > 60)
+    if (lfront > 80 || lback > 80)
         return;
 
     // Calculate the difference in the distances from both sides
     int diff = getDistDiffLeft();
+    if (diff < 0)
+    {
+        return;
+    }
+    
+    
+    // Calculate the angle adjustment
+    int adjustment = angleAdjust(diff);
 
-    // Determines which way the robot has to rotate
+    // Adjust the heading accordingly
+    adjustHeading(adjustment);
+}
+
+void wallAlignFront() {
+    int fleft = VL6180xGetDist(FRONT_LEFT);
+    int fright = VL6180xGetDist(FRONT_RIGHT);
+
+    // Past a certain distance on the sensors, stop trying to wall orient
+    if (fleft > 80 || fright > 80)
+        return;
+
+    // Calculate the difference in the distances from both sides
+    int diff = getDistDiffFront();
+    if (diff > 0)
+    {
+        return;
+    }
+    
+    
+    // Calculate the angle adjustment
+    int adjustment = angleAdjust(diff);
+
+    // Adjust the heading accordingly
+    adjustHeading(adjustment);
+}
+
+void wallAlignBack() {
+    int bright = VL6180xGetDist(BACK_RIGHT);
+    int bleft = VL6180xGetDist(BACK_LEFT);
+
+    // Past a certain distance on the sensors, stop trying to wall orient
+    if (bright > 60 || bleft > 60)
+        return;
+
+    // Calculate the difference in the distances from both sides
+    int diff = getDistDiffBack();
+    
+    // Calculate the angle adjustment
+    int adjustment = angleAdjust(diff);
+
+    // Adjust the heading accordingly
+    adjustHeading(adjustment);
+}
+
+// Angle correction using a linear approximation to arctan
+// I got this by doing fun Excel spreadsheets and rounding to
+// the nearest quarter degree - I will add more documentation later
+// --> this code is capable of correcting up to a 50 degree rotation
+int angleAdjust(int diff) {
     int dir = 1;
+    int theta = 0;
     if (diff < 0) {
         diff = -diff; 
         dir = -dir;
     }
-    
-    // Angle correction using a linear approximation to arctan
-    // I got this by doing fun Excel spreadsheets and rounding to
-    // the nearest quarter degree - I will add more documentation later
-    // --> this code is capable of correcting up to a 50 degree rotation
-    int theta = 0;
     if (diff <= 1)
         theta = 18 * diff;
     else if (diff <= 11)
@@ -209,8 +224,7 @@ void wallAlignLeft() {
     else if (diff <= 54)
         theta = 270 + 9  * diff;
 
-    // Adjust the heading accordingly
-    adjustHeading(dir * theta);
+    return dir * theta;
 }
 
 int32_t sumAngErr = 0;
@@ -255,7 +269,7 @@ void pidStop()
             return;
         }
     }
-    else
+    else // !currTPP
     {
         stoppedCount = 0;
     }
@@ -332,16 +346,23 @@ void pidRotate()
                 moveToNextInstruction();
                 //
             }
+            else if (getActionMode() == ACT_MOVE_COR_BW)
+            {
+                pidOff();
+                goalTicksTotal -= getAverageEncoderTicks();
+                resetEncoderDistances();
+                setActionMode(ACT_MOVE_BW);
+            }
             else
             {
                 pidOff();
-                goalTicksTotal -= getAverageEncoderTicksRet();
+                goalTicksTotal -= getAverageEncoderTicks();
                 resetEncoderDistances();
                 setActionMode(ACT_MOVE);
             }
         }
     }
-    else
+    else // currAngError is large
     {
         closeIts = 0;
     }    
@@ -366,17 +387,34 @@ void pidStraightLine() {
     if (currAngErr > 90 || currAngErr < -90)
     {
         sumAngErr = 0;
-        setActionMode(ACT_MOVE_COR);
+        if (getActionMode() == ACT_MOVE_BW)
+        {
+            setActionMode(ACT_MOVE_COR_BW);
+        }
+        else 
+        {
+            setActionMode(ACT_MOVE_COR);
+        }
         return;
     }
 
-    if (VL6180xGetDist(FRONT_LEFT) < 50 || VL6180xGetDist(FRONT_RIGHT) < 50)
+    if (getActionMode == ACT_MOVE && (VL6180xGetDist(FRONT_LEFT) < 50 || VL6180xGetDist(FRONT_RIGHT) < 50))
     {
         setActionMode(ACT_STOP);
         pidStop();
         return;
     }
-    if (getAverageEncoderTicksRet() > (goalTicksTotal - currTpp * 5))
+    /*
+    if (getActionMode == ACT_MOVE_BW && (VL6180xGetDist(BACK_LEFT) < 50 || VL6180xGetDist(BACK_RIGHT) < 50))
+    {
+        setActionMode(ACT_STOP);
+        pidStop();
+        return;
+    }
+    */
+
+    if ((getActionMode() == ACT_MOVE    && (goalTicksTotal - getAverageEncoderTicks()) < currTpp * 5) ||
+        (getActionMode() == ACT_MOVE_BW && (goalTicksTotal - getAverageEncoderTicks()) > currTpp * 5) )
     {
         setActionMode(ACT_STOP);
         pidStop();
@@ -409,8 +447,14 @@ void pidStraightLine() {
         angle_adj = -250;
     }    
 
-    setLeftMotorPower(av_pwm + speed_adj + angle_adj - 200);
-    setRightMotorPower(av_pwm - speed_adj - angle_adj + 200);
+    int8_t dir = 1;
+    if (getActionMode() == ACT_MOVE_BW)
+    {
+        dir = -1;
+    }
+
+    setLeftMotorPower(speed_adj + angle_adj + dir * (av_pwm + 200));
+    setRightMotorPower(-speed_adj - angle_adj + dir * (av_pwm - 200));
 
     // if (currAngErr < 25 && currAngErr > -25)
     // {

@@ -54,12 +54,7 @@ int16_t getLeftEncoderDist(void)
     return totalTicksLeft;
 }
 
-void getAverageEncoderTicks(int16_t * avEncoderTicks) {
-    
-    *avEncoderTicks = (totalTicksLeft + totalTicksRight) >> 1;
-}
-
-int16_t getAverageEncoderTicksRet(void) {
+int16_t getAverageEncoderTicks(void) {
     
     return (totalTicksLeft + totalTicksRight) / 2;
 }

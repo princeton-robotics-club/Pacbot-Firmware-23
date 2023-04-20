@@ -34,7 +34,7 @@ volatile int16_t goalTpp = 0;
 /* Add anything you want to print every 50ms */
 void debug_print(void)
 {
-    // fprintf(usartStream_Ptr, "rf: %d, ", VL6180xGetDist(RIGHT_FRONT));
+    // fprintf(usartStream_Ptr, "ang: %d\n", bno055GetCurrHeading());
     // fprintf(usartStream_Ptr, "dir: %d\n", g_s_targetCardinalDir);
 
     return;
@@ -47,10 +47,6 @@ volatile static int8_t g_s_milliFlag = 0;
 volatile Action g_action_mode = ACT_OFF;
 void setActionMode(Action mode)
 {
-    if (mode == ACT_MOVE)
-    {
-        wallAlignTest(); 
-    }
     g_action_mode = mode;
 }
 Action getActionMode()
@@ -85,7 +81,7 @@ void millisTask(void)
 
     if (!(g_s_millis % 5))
     {
-        commsTask();
+        // commsTask();
         // commsReceiveTask();
         // commsUpdateModeTask();
     }
@@ -98,9 +94,13 @@ void millisTask(void)
         {
         case ACT_ROTATE:
         case ACT_MOVE_COR:
+        case ACT_MOVE_COR_BW:
             pidRotate();
             break;
         case ACT_MOVE:
+            pidStraightLine();
+            break;
+        case ACT_MOVE_BW:
             pidStraightLine();
             break;
         case ACT_STOP:
@@ -116,7 +116,7 @@ void millisTask(void)
     if (!((g_s_millis+3) % 5))
     {
         // Uses a ring buffer to low-pass filter the encoder speeds
-        getAverageEncoderTicks((int16_t *) (tickBuf + tickBufIdx));
+        tickBuf[tickBufIdx] = getAverageEncoderTicks();
         currTpp = tickBuf[tickBufIdx] - tickBuf[(tickBufIdx + 1) % TICK_BUFF_SIZE];
         if (!((goalTpp >= 0) ^ (tickBuf[tickBufIdx] >= goalTicksTotal)))
             goalTpp = 0;
@@ -203,7 +203,7 @@ int main(void)
     // Main loop
     while (1) 
     {
-        // debug_comms_task();
+        debug_comms_task();
         I2CTask();
     }
 }

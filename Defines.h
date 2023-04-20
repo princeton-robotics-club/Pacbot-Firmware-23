@@ -27,7 +27,9 @@ typedef enum act {
     ACT_OFF,
     ACT_ROTATE,
     ACT_MOVE,
+    ACT_MOVE_BW,
     ACT_MOVE_COR,
+    ACT_MOVE_COR_BW,
     ACT_STOP,
 } Action;
 
