@@ -63,6 +63,22 @@ int av_pwm = AV_PWM_MAX;
 
 #define GOOD_ITERS_BOUND 2
 
+// Millimeters
+#define CELL_SIZE 88.9
+#define ROBOT_SIZE 86.36
+#define SENSOR_DIST 50
+double cellSize = CELL_SIZE;
+double robotSize = ROBOT_SIZE;
+double sensorDist = SENSOR_DIST;
+
+// Millimeters
+#define DIST_UPPER_BOUND 60
+#define DIST_ERR_MARGIN 15
+#define BOUNDING_BOX 91.44
+int distUpperBound = DIST_UPPER_BOUND;
+int distErrMargin = DIST_ERR_MARGIN;
+double boundingBox = BOUNDING_BOX;
+
 static volatile int16_t goalHeading = 0;
 
 /* PUT THIS BEHIND GETTERS AND SETTERS AT SOME POINT? */
@@ -90,8 +106,8 @@ void adjustHeading(int16_t headingDelta) {
 
 void wallAlignTest()
 {
-    wallAlignRight();
-    wallAlignLeft();
+    //wallAlignRight();
+    //wallAlignLeft();
     
     // fprintf(usartStream_Ptr, "FR: %d\n", VL6180xGetDist(RIGHT_FRONT));
     // if (VL6180xGetDist(RIGHT_FRONT) < 50 || VL6180xGetDist(RIGHT_BACK) < 50)
@@ -104,6 +120,100 @@ void wallAlignTest()
     //     adjustHeading(50 - VL6180xGetDist(LEFT_FRONT));
     //     return;
     // }
+}
+
+// Are we in a corridor, in a corner, at a 3-way intersection, or at a 4-way intersection?
+// Given our maze and the relationship between distance measurements, we make a best guess.
+// This determines which sensor readings to rely on.
+// Returns the environment as an int in (1, 4).
+void determineEnv() {
+    int r_front = VL6180xGetDist(RIGHT_FRONT);
+    int r_back = VL6180xGetDist(RIGHT_BACK);
+    int l_front = VL6180xGetDist(LEFT_FRONT);
+    int l_back = VL6180xGetDist(LEFT_BACK);
+    int f_left = VL6180xGetDist(FRONT_LEFT);
+    int f_right = VL6180xGetDist(FRONT_RIGHT);
+    int b_right = VL6180xGetDist(BACK_RIGHT);
+    int b_left = VL6180xGetDist(BACK_LEFT);
+
+    int env = 0;
+
+    // Corner to the left
+    if ((f_left + distErrMargin) < f_right || (f_left - distErrMargin) <  f_right) && ((b_left + distErrMargin) < b_right || (b_left - distErrMargin) <  b_right){
+        env = 2;
+    }
+
+    // If at least one of two adjacent sensors measures a distance outside the bounding box, consider this an open pathway
+
+}
+
+ // Assuming movement forward by 1 cell in corridor, angle towards center of corridor.
+void centerInCorridor() {
+    int r_front = VL6180xGetDist(RIGHT_FRONT);
+    int r_back = VL6180xGetDist(RIGHT_BACK);
+    int l_front = VL6180xGetDist(LEFT_FRONT);
+    int l_back = VL6180xGetDist(LEFT_BACK);
+
+    if ((l_front > distUpperBound || l_back > distUpperBound) || (r_front > distUpperBound || r_back > distUpperBound)){
+        return;
+    }
+
+    // Final adjustment to be made
+    int adjustment = 0;
+
+    // Calculate average angle in relation to corridor wall
+    // Average the two difference measurements to minimize error
+    int angleToWall = angleAdjust((getDistDiffLeft() + getDistDiffRight()) / 2);
+
+    // Align the robot with corridor walls
+    adjustment += angleToWall;
+
+    // Calculate displacement from sensors on left side
+    int l_diff = getDistDiffLeft();
+    // Pythagorean theorem
+    double l_ratio = sqrt(l_diff * l_diff + sensorDist * sensorDist);
+    // Triangle similarity
+    double l_displacement = sensorDist * ((l_front + l_back) / 2.0 + robotSize / 2) / l_ratio;
+
+    // Calculate displacement from sensors on right side
+    int r_diff = getDistDiffRight();
+    // Pythagorean theorem
+    double r_ratio = sqrt(r_diff * r_diff + sensorDist * sensorDist);
+    // Triangle similarity
+    double r_displacement = sensorDist * ((r_front + r_back) / 2.0 + robotSize / 2) / r_ratio;
+    
+    // Calculate displacement of robot center from corridor center
+    // Positive value = too far right, negative value = too far left
+    // Average the two displacement measurements to minimize error
+    double displacement = ((l_displacement - cellSize) + (cellSize - r_displacement)) / 2;
+
+    // Use arccos to find direction of travel
+    int angleToCenter = angleToCenter((int)displacement);
+
+    // Direct the robot towards center of corridor
+    adjustment += angleToCenter;
+
+    adjustHeading(adjustment);
+}
+
+// Arccos of displacement over 88.9 mm (cell size)
+int angleToCenter(int diff) {
+    int dir = -1;
+    int theta = 0;
+    if (diff < 0) {
+        diff = -diff; 
+        dir = -dir;
+    }
+    if (diff <= 53)
+        theta = 1440 - 11 * diff;
+    else if (diff <= 75)
+        theta = 857 - 15 * (diff - 53);
+    else if (diff <= 82)
+        theta = 527 - 22 * (diff - 75);
+    else if (diff <= 87)
+        theta = 373 - 35 * (diff - 82);
+
+    return dir * theta;
 }
 
 void wallAlignRight() {
