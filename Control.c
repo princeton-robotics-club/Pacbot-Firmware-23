@@ -79,6 +79,8 @@ int distUpperBound = DIST_UPPER_BOUND;
 int distErrMargin = DIST_ERR_MARGIN;
 double boundingBox = BOUNDING_BOX;
 
+int pastAngle = 0;
+
 static volatile int16_t goalHeading = 0;
 
 /* PUT THIS BEHIND GETTERS AND SETTERS AT SOME POINT? */
@@ -106,20 +108,6 @@ void adjustHeading(int16_t headingDelta) {
 
 void wallAlignTest()
 {
-    //wallAlignRight();
-    //wallAlignLeft();
-    
-    // fprintf(usartStream_Ptr, "FR: %d\n", VL6180xGetDist(RIGHT_FRONT));
-    // if (VL6180xGetDist(RIGHT_FRONT) < 50 || VL6180xGetDist(RIGHT_BACK) < 50)
-    // {
-    //     adjustHeading(VL6180xGetDist(RIGHT_FRONT) - 50);
-    //     return;
-    // }
-    // if (VL6180xGetDist(LEFT_FRONT) < 50 || VL6180xGetDist(LEFT_BACK) < 50)
-    // {
-    //     adjustHeading(50 - VL6180xGetDist(LEFT_FRONT));
-    //     return;
-    // }
 }
 
 // Are we in a corridor, in a corner, at a 3-way intersection, or at a 4-way intersection?
@@ -196,14 +184,103 @@ void centerInCorridor() {
     adjustHeading(adjustment);
 }
 
-// Arccos of displacement over 88.9 mm (cell size)
+int safelyCenter(){
+    int r_front = VL6180xGetDist(RIGHT_FRONT);
+    int r_back = VL6180xGetDist(RIGHT_BACK);
+    int l_front = VL6180xGetDist(LEFT_FRONT);
+    int l_back = VL6180xGetDist(LEFT_BACK);
+
+    // Is there enough information to center based on walls vs. previous angle?
+    // Is the information reliable (corner confusion)?
+    boolean isSafe = true;
+
+    // Check for walls on either side of robot
+    if ((l_front > distUpperBound || l_back > distUpperBound) || (r_front > distUpperBound || r_back > distUpperBound)){
+        isSafe = false;
+    }
+    if (abs(getDistDiffRight() - getDistDiffLeft()) > distErrMargin){
+        isSafe = false;
+    }
+    if (!(l_front < l_back && r_front > r_back) && !(l_front > l_back && r_front < r_back)){
+        isSafe = false;
+    }
+
+    // If it is not possible to align using side walls
+    if (!isSafe){
+        adjustHeading(-pastAngle)
+    }
+
+    // Final adjustment to be made
+    int adjustment = 0;
+
+    // Calculate average angle in relation to corridor wall
+    // Average the two difference measurements to minimize error
+    int angleToWall = angleAdjust((getDistDiffLeft() + getDistDiffRight()) / 2);
+
+    // Align the robot with corridor walls
+    adjustment += angleToWall;
+
+    // Calculate displacement from sensors on left side
+    int l_diff = getDistDiffLeft();
+    // Pythagorean theorem
+    double l_ratio = sqrt(l_diff * l_diff + sensorDist * sensorDist);
+    // Triangle similarity
+    double l_displacement = sensorDist * ((l_front + l_back) / 2.0 + robotSize / 2) / l_ratio;
+
+    // Calculate displacement from sensors on right side
+    int r_diff = getDistDiffRight();
+    // Pythagorean theorem
+    double r_ratio = sqrt(r_diff * r_diff + sensorDist * sensorDist);
+    // Triangle similarity
+    double r_displacement = sensorDist * ((r_front + r_back) / 2.0 + robotSize / 2) / r_ratio;
+    
+    // Calculate displacement of robot center from corridor center
+    // Positive value = too far right, negative value = too far left
+    // Average the two displacement measurements to minimize error
+    double displacement = ((l_displacement - cellSize) + (cellSize - r_displacement)) / 2;
+
+    // Use arccos to find direction of travel
+    int angleToCenter = angleToCenter((int)displacement);
+    pastAngle = angleToCenter;
+
+    // Direct the robot towards center of corridor
+    adjustment += angleToCenter;
+
+    adjustHeading(adjustment);
+}
+
+// Arcsin of displacement over 88.9 mm (cell size)
 int angleToCenter(int diff) {
     int dir = -1;
     int theta = 0;
+
     if (diff < 0) {
         diff = -diff; 
         dir = -dir;
     }
+
+    if (diff <= 53)
+        theta = 11 * diff;
+    else if (diff <= 75)
+        theta = 583 + 15 * (diff - 53);
+    else if (diff <= 82)
+        theta = 913 + 22 * (diff - 75);
+    else if (diff <= 87)
+        theta = 1067 + 35 * (diff - 82);
+
+    return dir * theta;
+}
+
+// Arccos of displacement over 88.9 mm (cell size)
+int arcCos(int diff) {
+    int dir = -1;
+    int theta = 0;
+
+    if (diff < 0) {
+        diff = -diff; 
+        dir = -dir;
+    }
+
     if (diff <= 53)
         theta = 1440 - 11 * diff;
     else if (diff <= 75)
@@ -423,6 +500,7 @@ void pidRotate()
     int16_t            currVelErr = 0;
     static int16_t     lastVelErr = 0;
 
+    pastAngle = 0;
 
     // Current angle error calculation --> we want between -180 deg and +180 deg for minimum turning    
     currAngErr = (goalHeading - bno055GetCurrHeading());
