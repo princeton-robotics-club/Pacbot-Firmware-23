@@ -58,10 +58,12 @@ int kpSTOP = KPSTOP;
 int kiSTOP = KISTOP;
 int kdSTOP = KDSTOP;
 
-#define AV_PWM_MAX 1200
+#define AV_PWM_MAX 1100
 int av_pwm = AV_PWM_MAX;
 
 #define GOOD_ITERS_BOUND 2
+
+#define PUSH_THRESH 15
 
 static volatile int16_t goalHeading = 0;
 
@@ -88,12 +90,21 @@ void adjustHeading(int16_t headingDelta) {
         goalHeading -= 5760;
 }
 
+int testPush()
+{
+    return ((VL6180xGetDist(RIGHT_FRONT) < PUSH_THRESH && VL6180xGetDist(RIGHT_BACK) < PUSH_THRESH) ||
+         (VL6180xGetDist(LEFT_FRONT)  < PUSH_THRESH &&  VL6180xGetDist(LEFT_BACK) < PUSH_THRESH));
+}
+
 void wallAlignTest()
 {
-    wallAlignRight();
-    wallAlignLeft();
-    
-    // fprintf(usartStream_Ptr, "FR: %d\n", VL6180xGetDist(RIGHT_FRONT));
+    // fprintf(usartStream_Ptr, "RF: %d\n", VL6180xGetDist(RIGHT_FRONT));
+    if (!wallAlignRight())
+    {
+        
+        wallAlignLeft();
+    }    
+
     // if (VL6180xGetDist(RIGHT_FRONT) < 50 || VL6180xGetDist(RIGHT_BACK) < 50)
     // {
     //     adjustHeading(VL6180xGetDist(RIGHT_FRONT) - 50);
@@ -104,90 +115,6 @@ void wallAlignTest()
     //     adjustHeading(50 - VL6180xGetDist(LEFT_FRONT));
     //     return;
     // }
-}
-
-void wallAlignRight() {
-    int rfront = VL6180xGetDist(RIGHT_FRONT);
-    int rback = VL6180xGetDist(RIGHT_BACK);
-
-    // Past a certain distance on the sensors, stop trying to wall orient
-    if (rfront > 80 || rback > 80)
-        return;
-
-    // Calculate the difference in the distances from both sides
-    int diff = getDistDiffRight();
-
-    // Determines which way the robot has to rotate
-    
-    // Calculate the angle adjustment
-    int adjustment = angleAdjust(diff);
-
-    // Adjust the heading accordingly
-    adjustHeading(adjustment);
-}
-
-void wallAlignLeft() {
-    int lfront = VL6180xGetDist(LEFT_BACK);
-    int lback = VL6180xGetDist(LEFT_FRONT);
-
-    // Past a certain distance on the sensors, stop trying to wall orient
-    if (lfront > 80 || lback > 80)
-        return;
-
-    // Calculate the difference in the distances from both sides
-    int diff = getDistDiffLeft();
-    if (diff < 0)
-    {
-        return;
-    }
-    
-    
-    // Calculate the angle adjustment
-    int adjustment = angleAdjust(diff);
-
-    // Adjust the heading accordingly
-    adjustHeading(adjustment);
-}
-
-void wallAlignFront() {
-    int fleft = VL6180xGetDist(FRONT_LEFT);
-    int fright = VL6180xGetDist(FRONT_RIGHT);
-
-    // Past a certain distance on the sensors, stop trying to wall orient
-    if (fleft > 80 || fright > 80)
-        return;
-
-    // Calculate the difference in the distances from both sides
-    int diff = getDistDiffFront();
-    if (diff > 0)
-    {
-        return;
-    }
-    
-    
-    // Calculate the angle adjustment
-    int adjustment = angleAdjust(diff);
-
-    // Adjust the heading accordingly
-    adjustHeading(adjustment);
-}
-
-void wallAlignBack() {
-    int bright = VL6180xGetDist(BACK_RIGHT);
-    int bleft = VL6180xGetDist(BACK_LEFT);
-
-    // Past a certain distance on the sensors, stop trying to wall orient
-    if (bright > 60 || bleft > 60)
-        return;
-
-    // Calculate the difference in the distances from both sides
-    int diff = getDistDiffBack();
-    
-    // Calculate the angle adjustment
-    int adjustment = angleAdjust(diff);
-
-    // Adjust the heading accordingly
-    adjustHeading(adjustment);
 }
 
 // Angle correction using a linear approximation to arctan
@@ -225,6 +152,90 @@ int angleAdjust(int diff) {
         theta = 270 + 9  * diff;
 
     return dir * theta;
+}
+
+int wallAlignRight() {
+    int rfront = VL6180xGetDist(RIGHT_FRONT);
+    int rback = VL6180xGetDist(RIGHT_BACK);
+
+    // Past a certain distance on the sensors, stop trying to wall orient
+    if (rfront > 80 || rback > 80)
+        return 0;
+
+    // Calculate the difference in the distances from both sides
+    int diff = getDistDiffRight();
+
+    // Determines which way the robot has to rotate
+    
+    // Calculate the angle adjustment
+    int adjustment = angleAdjust(diff);
+
+    // Adjust the heading accordingly
+    adjustHeading(adjustment);
+    // setGoalHeading(adjustment + bno055GetCurrHeading());
+    return 1;
+}
+
+int wallAlignLeft() {
+    int lfront = VL6180xGetDist(LEFT_BACK);
+    int lback = VL6180xGetDist(LEFT_FRONT);
+
+    // Past a certain distance on the sensors, stop trying to wall orient
+    if (lfront > 80 || lback > 80)
+        return 0;
+
+    // Calculate the difference in the distances from both sides
+    int diff = getDistDiffLeft();
+    
+    
+    // Calculate the angle adjustment
+    int adjustment = angleAdjust(diff);
+
+    // Adjust the heading accordingly
+    adjustHeading(adjustment);
+    // setGoalHeading(adjustment + bno055GetCurrHeading());
+    return 1;
+}
+
+int wallAlignFront() {
+    int fleft = VL6180xGetDist(FRONT_LEFT);
+    int fright = VL6180xGetDist(FRONT_RIGHT);
+
+    // Past a certain distance on the sensors, stop trying to wall orient
+    if (fleft > 80 || fright > 80)
+        return 0;
+
+    // Calculate the difference in the distances from both sides
+    int diff = getDistDiffFront();
+    
+    
+    // Calculate the angle adjustment
+    int adjustment = angleAdjust(diff);
+
+    // Adjust the heading accordingly
+    adjustHeading(adjustment);
+    // setGoalHeading(adjustment + bno055GetCurrHeading());
+    return 1;
+}
+
+int wallAlignBack() {
+    int bright = VL6180xGetDist(BACK_RIGHT);
+    int bleft = VL6180xGetDist(BACK_LEFT);
+
+    // Past a certain distance on the sensors, stop trying to wall orient
+    if (bright > 60 || bleft > 60)
+        return 0;
+
+    // Calculate the difference in the distances from both sides
+    int diff = getDistDiffBack();
+    
+    // Calculate the angle adjustment
+    int adjustment = angleAdjust(diff);
+
+    // Adjust the heading accordingly
+    adjustHeading(adjustment);
+    // setGoalHeading(adjustment + bno055GetCurrHeading());
+    return 1;
 }
 
 int32_t sumAngErr = 0;
@@ -310,8 +321,8 @@ void pidRotate()
     int16_t        currAngErr = 0;
     static int16_t lastAngErr = 0;
 
-    int16_t            currVelErr = 0;
-    static int16_t     lastVelErr = 0;
+    // int16_t            currVelErr = 0;
+    // static int16_t     lastVelErr = 0;
 
 
     // Current angle error calculation --> we want between -180 deg and +180 deg for minimum turning    
@@ -324,11 +335,11 @@ void pidRotate()
     if ((sumAngErr + currAngErr) * kiROT < (300 << 5) && (sumAngErr + currAngErr) * kiROT > -(300 << 5))
         sumAngErr += currAngErr;
 
-    currVelErr = getRightEncoderDist() + getLeftEncoderDist();
-    sumVelErr += currVelErr;
+    // currVelErr = getRightEncoderDist() + getLeftEncoderDist();
+    // sumVelErr += currVelErr;
 
     int32_t angle_adj = ((int32_t)currAngErr * kpROT + (int32_t)(currAngErr - lastAngErr) * kdROT + (sumAngErr * kiROT)) >> 5;
-    int32_t speed_adj = ((int32_t)currVelErr * kpV + (int32_t)(currVelErr - lastVelErr) * kdV + (sumVelErr * kiV)) >> 5;
+    // int32_t speed_adj = ((int32_t)currVelErr * kpV + (int32_t)(currVelErr - lastVelErr) * kdV + (sumVelErr * kiV)) >> 5;
 
     setLeftMotorPower((int)angle_adj);
     setRightMotorPower(0 - (int)angle_adj);
@@ -338,10 +349,23 @@ void pidRotate()
         closeIts++;
         if (closeIts > 10)
         {
-            if (getActionMode() == ACT_ROTATE)
+            closeIts = 0;
+            if (getActionMode() == ACT_PUSH_FW)
+            {
+                adjustHeading(-1000);
+                resetEncoderDistances();
+                setActionMode(ACT_MOVE_COR);
+            }
+            else if (getActionMode() == ACT_PUSH_BW)
+            {
+                adjustHeading(-1000);
+                resetEncoderDistances();
+                setActionMode(ACT_MOVE_COR_BW);
+            }
+            else if (getActionMode() == ACT_ROTATE)
             {
                 resetEncoderDistances();
-                setActionMode(ACT_OFF);
+                setActionMode(ACT_STOP);
                 // HERE
                 moveToNextInstruction();
                 //
@@ -368,7 +392,7 @@ void pidRotate()
     }    
     // fprintf(usartStream_Ptr, "angerr %d\n", currAngErr);
     lastAngErr = currAngErr;
-    lastVelErr = currVelErr;
+    // lastVelErr = currVelErr;
 }
 
 // Returns a new pwm setting given target speed and current speed
@@ -376,15 +400,36 @@ void pidStraightLine() {
 
     int16_t        currAngErr = 0;
     static int16_t lastAngErr = 0;
-    static int8_t closeIts = 0;
+    // static int8_t closeIts = 0;
 
     int16_t            currVelErr = 0;
     static int16_t     lastVelErr = 0;
 
+    int8_t wallCorr = 0;
+    // uint8_t dist = VL6180xGetDist(RIGHT_FRONT);
+    // if (dist < 110)
+    // {
+    //     wallCorr = (((int8_t)dist) - 50) >> 1;
+    // }
+    // else if ((dist = VL6180xGetDist(RIGHT_BACK)) < 110)
+    // {
+    //     wallCorr = (((int8_t)dist) - 50) >> 1;
+    // }
+    // else if ((dist = VL6180xGetDist(LEFT_FRONT)) < 110)
+    // {
+    //     wallCorr = (50 - ((int8_t)dist)) >> 1;
+    // }
+    // else if ((dist = VL6180xGetDist(LEFT_BACK)) < 110)
+    // {
+    //     wallCorr = (50 - ((int8_t)dist)) >> 1;
+    // }
+    // fprintf(usartStream_Ptr, "wallCorr = %d\n", (int8_t)wallCorr);
+
+
     currAngErr = (goalHeading - bno055GetCurrHeading()); 
     while (currAngErr < -2880) currAngErr += 5760;
     while (currAngErr > +2880) currAngErr -= 5760;
-    if (currAngErr > 90 || currAngErr < -90)
+    if (currAngErr > 270 || currAngErr < -270)
     {
         sumAngErr = 0;
         if (getActionMode() == ACT_MOVE_BW)
@@ -398,14 +443,14 @@ void pidStraightLine() {
         return;
     }
 
-    if (getActionMode == ACT_MOVE && (VL6180xGetDist(FRONT_LEFT) < 50 || VL6180xGetDist(FRONT_RIGHT) < 50))
+    if (getActionMode() == ACT_MOVE && (VL6180xGetDist(FRONT_LEFT) < 50 || VL6180xGetDist(FRONT_RIGHT) < 50))
     {
-        setActionMode(ACT_STOP);
+        setActionMode(ACT_ROTATE);
         pidStop();
         return;
     }
     /*
-    if (getActionMode == ACT_MOVE_BW && (VL6180xGetDist(BACK_LEFT) < 50 || VL6180xGetDist(BACK_RIGHT) < 50))
+    if (getActionMode() == ACT_MOVE_BW && (VL6180xGetDist(BACK_LEFT) < 50 || VL6180xGetDist(BACK_RIGHT) < 50))
     {
         setActionMode(ACT_STOP);
         pidStop();
@@ -433,7 +478,9 @@ void pidStraightLine() {
     if ((sumAngErr + currAngErr) * kiA < (450 << 5) && (sumAngErr + currAngErr) * kiA > -(450 << 5))
         sumAngErr += currAngErr;
 
-    currVelErr = -getRightEncoderDist() + getLeftEncoderDist();    
+    
+
+    currVelErr = -getRightEncoderDist() + getLeftEncoderDist() + wallCorr;    
     sumVelErr += currVelErr;
 
     int angle_adj = (currAngErr * kpA + (currAngErr - lastAngErr) * kdA + (sumAngErr * kiA)) >> 5;
@@ -468,7 +515,7 @@ void pidStraightLine() {
     // {
     //     closeIts = 0;
     // }    
-    // fprintf(usartStream_Ptr, "angerr %d, ", currAngErr);
+    // fprintf(usartStream_Ptr, "goalTicks %d\n", goalTicksTotal);
     lastAngErr = currAngErr;
     lastVelErr = currVelErr;
 

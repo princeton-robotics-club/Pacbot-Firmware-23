@@ -25,7 +25,7 @@ typedef struct Command
 static volatile PacbCommand g_s_commandBuf[2] = {};
 
 static Gamestate gameState = GS_ON;
-static volatile uint32_t g_lastCommandSent = 0;
+volatile uint32_t g_lastCommandSent = 0;
 // 1 if failed, 0 if succeeded
 static volatile uint8_t g_lastCommandFailed = TRUE;
 volatile Direction g_s_targetCardinalDir = DIR_WEST;
@@ -50,7 +50,11 @@ void moveToNextInstruction()
 {
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
     {
-        g_lastCommandSent = g_s_commandBuf[0].commNum;
+        if (g_s_commandBuf[0].commNum > g_lastCommandSent)
+        {
+            g_lastCommandSent = g_s_commandBuf[0].commNum;
+        }
+            
         g_s_commandBuf[0].commData = g_s_commandBuf[1].commData;
         g_s_commandBuf[0].commType = g_s_commandBuf[1].commType;
         g_s_commandBuf[0].commNum = g_s_commandBuf[1].commNum;
@@ -182,12 +186,12 @@ void commsReceiveTask(void)
         if (tempAction & 0b10000000)
         {
             g_s_commandBuf[ind].commType = ACT_MOVE_BW;
-            g_s_commandBuf[ind].commData = tempAction & 0b11;
+            g_s_commandBuf[ind].commData = tempAction;
         }
         else
         {
             g_s_commandBuf[ind].commType = ACT_MOVE;
-            g_s_commandBuf[ind].commData = tempAction & 0b11;
+            g_s_commandBuf[ind].commData = tempAction;
         }
     }
 
@@ -220,10 +224,20 @@ void commsUpdateModeTask(void)
     
     if (g_s_commandBuf[0].commType == ACT_MOVE_BW)
     {
-        Direction dir = g_s_commandBuf[0].commData;
-        uint8_t diff = dir - g_s_targetCardinalDir;
+        int dist = 255;
+        dist *= (g_s_commandBuf[0].commData & 0b1111100) >> 2;
+        if (!dist)
+        {
+            setActionMode(ACT_OFF);
+            moveToNextInstruction();
+            return;
+        }
+
+
+        Direction dir = g_s_commandBuf[0].commData & 0b11;
+        int8_t diff = dir - g_s_targetCardinalDir;
         // fprintf(usartStream_Ptr, "diff: %d\n", diff);
-        if (diff > 0)
+        if (diff < 0)
         {
             diff += 4;
         }
@@ -238,16 +252,27 @@ void commsUpdateModeTask(void)
             goalTicksTotal = 0;
             resetEncoderDistances();
         }
-        goalTicksTotal = getAverageEncoderTicks() - 255;
-        wallAlignTest();
-        setActionMode(ACT_MOVE_COR_BW);
+        
+        goalTicksTotal = getAverageEncoderTicks() - dist;
+        //wallAlignTest();
+        // fprintf(usartStream_Ptr, "HERE1\n");
+        setActionMode(ACT_PUSH_BW);
     }
     else if (g_s_commandBuf[0].commType == ACT_MOVE)
     {
-        Direction dir = g_s_commandBuf[0].commData;
-        uint8_t diff = dir - g_s_targetCardinalDir;
+        int dist = 255;
+        dist *= (g_s_commandBuf[0].commData & 0b1111100) >> 2;
+        if (!dist)
+        {
+            setActionMode(ACT_OFF);
+            moveToNextInstruction();
+            return;
+        }
+
+        Direction dir = g_s_commandBuf[0].commData & 0b11;
+        int8_t diff = dir - g_s_targetCardinalDir;
         // fprintf(usartStream_Ptr, "diff: %d\n", diff);
-        if (diff > 0)
+        if (diff < 0)
         {
             diff += 4;
         }
@@ -262,9 +287,9 @@ void commsUpdateModeTask(void)
             goalTicksTotal = 0;
             resetEncoderDistances();
         }
-        goalTicksTotal = getAverageEncoderTicks() + 255;
-        wallAlignTest();
-        setActionMode(ACT_MOVE_COR);
+        goalTicksTotal = getAverageEncoderTicks() + dist;
+        //wallAlignTest();
+        setActionMode(ACT_PUSH_FW);
     }
     else
     {
@@ -341,10 +366,10 @@ void debug_comms_task(void)
                 fprintf(usartStream_Ptr, "kd%c = %d\n", modeChar(mode), *kd);
                 break;
             case 'm':
-                wallAlignTest();
-                setActionMode(ACT_MOVE);
-                avTicksStart = getAverageEncoderTicks();
-                goalTicksTotal = k_val + avTicksStart;
+                //wallAlignTest();
+                setActionMode(ACT_PUSH_FW);
+                resetEncoderDistances();
+                goalTicksTotal = k_val;
                 fprintf(usartStream_Ptr, "goalTicksTotal = %d\n", (int) goalTicksTotal);
                 motors_on = 1;
                 fprintf(usartStream_Ptr, "av_pwm = %d\n", av_pwm);

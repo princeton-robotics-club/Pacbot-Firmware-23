@@ -31,11 +31,13 @@ volatile int tickBufIdx = 0;
 volatile int16_t currTpp = 0;
 volatile int16_t goalTpp = 0;
 
+volatile Action g_action_mode = ACT_OFF;
+extern uint32_t g_lastCommandSent;
 /* Add anything you want to print every 50ms */
 void debug_print(void)
 {
-    // fprintf(usartStream_Ptr, "ang: %d\n", bno055GetCurrHeading());
-    // fprintf(usartStream_Ptr, "dir: %d\n", g_s_targetCardinalDir);
+    fprintf(usartStream_Ptr, "commNum: %d\n", g_lastCommandSent);
+    // fprintf(usartStream_Ptr, "ang: %ul\n", g_s_targetCardinalDir);
 
     return;
 }
@@ -44,9 +46,33 @@ void debug_print(void)
 volatile static uint32_t g_s_millis = 0;
 volatile static int8_t g_s_milliFlag = 0;
 
-volatile Action g_action_mode = ACT_OFF;
 void setActionMode(Action mode)
 {
+    if (mode == ACT_PUSH_FW || mode == ACT_PUSH_BW)
+    {
+        // fprintf(usartStream_Ptr, "HERE2\n");
+        if (!testPush())
+        {
+            if (mode == ACT_PUSH_BW)
+            {
+                // fprintf(usartStream_Ptr, "HERE: mode: %d\n", mode);
+                mode = ACT_MOVE_COR_BW;
+            }
+            else
+            {
+                mode = ACT_MOVE_COR;
+            }   
+        }
+        else
+        {
+            adjustHeading(1000);
+        }
+    }
+    if (mode == ACT_MOVE_COR || mode == ACT_MOVE_COR_BW)
+    {
+        wallAlignTest();
+    }
+
     g_action_mode = mode;
 }
 Action getActionMode()
@@ -81,7 +107,7 @@ void millisTask(void)
 
     if (!(g_s_millis % 5))
     {
-        // commsTask();
+        commsTask();
         // commsReceiveTask();
         // commsUpdateModeTask();
     }
@@ -105,6 +131,12 @@ void millisTask(void)
             break;
         case ACT_STOP:
             pidStop();
+            break;
+        case ACT_PUSH_FW:
+            pidRotate();
+            break;
+        case ACT_PUSH_BW:
+            pidRotate();
             break;
         default:
             pidOff();
@@ -203,7 +235,7 @@ int main(void)
     // Main loop
     while (1) 
     {
-        debug_comms_task();
+        // debug_comms_task();
         I2CTask();
     }
 }

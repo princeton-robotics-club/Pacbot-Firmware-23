@@ -31,6 +31,8 @@ typedef enum act {
     ACT_MOVE_COR,
     ACT_MOVE_COR_BW,
     ACT_STOP,
+    ACT_PUSH_FW,
+    ACT_PUSH_BW,
 } Action;
 
 void setActionMode(Action mode);
