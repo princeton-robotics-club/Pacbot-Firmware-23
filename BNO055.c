@@ -123,6 +123,7 @@ I2CInstruction_ID bno055MultiRegRead(uint8_t * out,
     return ret;
 }
 
+// Sends an I2CInstruction to get the current heading, returns the id
 I2CInstruction_ID bno055Task(void)
 {
     return bno055GetHeading((uint8_t *)headingArr);

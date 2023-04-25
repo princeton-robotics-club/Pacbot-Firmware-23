@@ -15,6 +15,7 @@
 int16_t avTicksStart = 0;
 int16_t goalTicksTotal = 0;
 
+// Structure defining a decoded command from high level
 typedef struct Command
 {
     Action commType;
@@ -22,12 +23,14 @@ typedef struct Command
     uint32_t commNum;
 } PacbCommand;
 
+// Buffer containing current and next command from high level
 static volatile PacbCommand g_s_commandBuf[2] = {};
 
+// Current Game state
 static Gamestate gameState = GS_ON;
 volatile uint32_t g_lastCommandSent = 0;
 // 1 if failed, 0 if succeeded
-static volatile uint8_t g_lastCommandFailed = TRUE;
+static volatile uint8_t g_lastCommandFailed = FALSE;
 volatile Direction g_s_targetCardinalDir = DIR_WEST;
 
 Gamestate getGameState()
@@ -59,6 +62,8 @@ void moveToNextInstruction()
         g_s_commandBuf[0].commType = g_s_commandBuf[1].commType;
         g_s_commandBuf[0].commNum = g_s_commandBuf[1].commNum;
         g_s_commandBuf[1].commNum = 0;
+
+        g_lastCommandFailed = FALSE;
     }
 }
 
@@ -74,7 +79,10 @@ void commsSendTask(void)
         uint8_t nb = g_lastCommandSent >> i;
         fputc(nb, usartStream_Ptr);
     }
-    fputc((uint8_t)getReceiveBufSize(), usartStream_Ptr);
+    // THIS WAS CHANGED BELOW HERE
+    // fputc((uint8_t)getReceiveBufSize(), usartStream_Ptr);
+    fputc(g_lastCommandFailed, usartStream_Ptr);
+    // ABOVE HERE
     fputc('\n', usartStream_Ptr);
 
     return;
@@ -99,6 +107,7 @@ void commsReceiveTask(void)
     }
 
     // b is for BOI
+    // Get the vertical bar
     int b = fgetc(usartStream_Ptr);
     // fputc(b, usartStream_Ptr);
     if (b != '|')
@@ -106,6 +115,7 @@ void commsReceiveTask(void)
         return;
     }
 
+    // Get the command number (4 bytes)
     uint32_t tempLastCommand = 0;
     for (int8_t i = 24; i >= 0; i-=8)
     {
@@ -119,6 +129,7 @@ void commsReceiveTask(void)
         tempLastCommand |= ((uint32_t)b) << i;
     }
 
+    // Get the gamestate
     uint8_t tempGameState = 0;
     b = fgetc(usartStream_Ptr);
     // fputc(b, usartStream_Ptr);
@@ -129,6 +140,7 @@ void commsReceiveTask(void)
     }
     tempGameState = b;
 
+    // Get the new action
     uint8_t tempAction = 0;
     b = fgetc(usartStream_Ptr);
     // fputc(b, usartStream_Ptr);
@@ -139,6 +151,7 @@ void commsReceiveTask(void)
     }
     tempAction = b;
     
+    // Get the newline
     b = fgetc(usartStream_Ptr);
     // fputc(b, usartStream_Ptr);
     if (b != '\n')
@@ -147,6 +160,8 @@ void commsReceiveTask(void)
         return;
     }
     
+    // The number of the command must be greater than every other command
+    // we've received
     if (tempLastCommand <= g_lastCommandSent || 
     tempLastCommand <= g_s_commandBuf[1].commNum ||
     tempLastCommand <= g_s_commandBuf[0].commNum)
@@ -154,16 +169,23 @@ void commsReceiveTask(void)
         return;
     }
     
+    // Update the command buffer
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
     {
         // This is faster than filling a struct and copying by value
+
+        // If the gamestate is off, set the goal heading to our current heading until
+        // we've reset. Target Cardinal Direction as well
         if (gameState == GS_OFF)
         {
             g_s_targetCardinalDir = DIR_WEST;
             setGoalHeading(bno055GetCurrHeading());
         }
         
+        // Update to the new gamestate we've received
         gameState = tempGameState;
+
+        // If we've just turned GS off, clear the buffer
         if (tempGameState == GS_OFF)
         {
             g_s_commandBuf[0].commNum = 0;
@@ -174,9 +196,13 @@ void commsReceiveTask(void)
             g_s_commandBuf[1].commType = 0;
             commsUpdateModeTask();
             setGoalHeading(bno055GetCurrHeading());
+            // UNCOMMENT THIS IF WE RUN INTO ISSUES WITH NOT ACKING GS OFF
+            // g_lastCommandSent = tempLastCommand;
+            //
             return;
         }
         
+        // If comm[0] is empty fill it, fill comm[1] otherwise even if it's full
         uint8_t ind = 1;
         if (!g_s_commandBuf[0].commNum)
         {
@@ -208,22 +234,27 @@ void commsReceiveTask(void)
 
 void commsUpdateModeTask(void)
 {
+    // If GS is off, make sure we aren't doing anything
     if (gameState == GS_OFF)
     {
         setActionMode(ACT_OFF);
         return;
     }
+    // If action mode is not currently ACT_OFF, then we should continue executing our instruction
     if (getActionMode() != ACT_OFF)
     {
         return;
     }
+    // If comm[0] is empty then we don't have any update to make
     if (!g_s_commandBuf[0].commNum)
     {
         return;
     }
     
+    // If we should update to moving backwards
     if (g_s_commandBuf[0].commType == ACT_MOVE_BW)
     {
+        // Compute the distance to travel; if it's zero then stay still
         int dist = 255;
         dist *= (g_s_commandBuf[0].commData & 0b1111100) >> 2;
         if (!dist)
@@ -233,7 +264,7 @@ void commsUpdateModeTask(void)
             return;
         }
 
-
+        // Figure out which direction we should face
         Direction dir = g_s_commandBuf[0].commData & 0b11;
         int8_t diff = dir - g_s_targetCardinalDir;
         // fprintf(usartStream_Ptr, "diff: %d\n", diff);
@@ -247,15 +278,18 @@ void commsUpdateModeTask(void)
         }
         adjustHeading((diff * 90) << 4);
         g_s_targetCardinalDir = dir;
+
+        // If we've switched from forwards to backwards, reset this stuff
         if (goalTicksTotal > 0)
         {
             goalTicksTotal = 0;
             resetEncoderDistances();
         }
         
+        // Update the target travel distance
         goalTicksTotal = getAverageEncoderTicks() - dist;
         //wallAlignTest();
-        // fprintf(usartStream_Ptr, "HERE1\n");
+        // Move into the push bw mode
         setActionMode(ACT_PUSH_BW);
     }
     else if (g_s_commandBuf[0].commType == ACT_MOVE)

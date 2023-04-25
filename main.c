@@ -31,12 +31,13 @@ volatile int tickBufIdx = 0;
 volatile int16_t currTpp = 0;
 volatile int16_t goalTpp = 0;
 
+/* Stores the current action state. See defines.h. DO NOT UPDATE ON
+ * IT'S OWN UNLESS YOU KNOW WHAT YOU'RE DOING... USE THE FN */
 volatile Action g_action_mode = ACT_OFF;
-extern uint32_t g_lastCommandSent;
+
 /* Add anything you want to print every 50ms */
 void debug_print(void)
 {
-    fprintf(usartStream_Ptr, "commNum: %d\n", g_lastCommandSent);
     // fprintf(usartStream_Ptr, "ang: %ul\n", g_s_targetCardinalDir);
 
     return;
@@ -46,6 +47,7 @@ void debug_print(void)
 volatile static uint32_t g_s_millis = 0;
 volatile static int8_t g_s_milliFlag = 0;
 
+// Set's the action mode (intelligently)
 void setActionMode(Action mode)
 {
     if (mode == ACT_PUSH_FW || mode == ACT_PUSH_BW)
@@ -75,6 +77,8 @@ void setActionMode(Action mode)
 
     g_action_mode = mode;
 }
+
+// Gets the action mode
 Action getActionMode()
 {
     return g_action_mode;
@@ -105,6 +109,7 @@ void millisTask(void)
         bno055Task();
     }
 
+    // Run the comms task every 5 ms
     if (!(g_s_millis % 5))
     {
         commsTask();
