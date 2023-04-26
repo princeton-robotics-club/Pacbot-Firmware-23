@@ -386,17 +386,17 @@ void debug_comms_task(void)
         switch (k_name) {
             case 'p': 
                 *kp = k_val;
-                motors_on = 0;
+                // motors_on = 0;
                 fprintf(usartStream_Ptr, "kp%c = %d\n", modeChar(mode), *kp);
                 break;
             case 'i':
                 *ki = k_val;
-                motors_on = 0;
+                // motors_on = 0;
                 fprintf(usartStream_Ptr, "ki%c = %d\n", modeChar(mode), *ki);
                 break;
             case 'd':
                 *kd = k_val;
-                motors_on = 0;
+                // motors_on = 0;
                 fprintf(usartStream_Ptr, "kd%c = %d\n", modeChar(mode), *kd);
                 break;
             case 'm':
@@ -405,24 +405,24 @@ void debug_comms_task(void)
                 resetEncoderDistances();
                 goalTicksTotal = k_val;
                 fprintf(usartStream_Ptr, "goalTicksTotal = %d\n", (int) goalTicksTotal);
-                motors_on = 1;
+                // motors_on = 1;
                 fprintf(usartStream_Ptr, "av_pwm = %d\n", av_pwm);
                 break;
             case 'r':
                 setActionMode(ACT_ROTATE);
                 adjustHeading(k_val << 4);
                 fprintf(usartStream_Ptr, "rotation started\n");
-                motors_on = 1;
+                // motors_on = 1;
                 break;
             case 'g':
                 setGoalHeading(bno055GetCurrHeading());
-                motors_on = 0;
+                // motors_on = 0;
                 fprintf(usartStream_Ptr, "recalibrated");
                 break;
             case 'w':
                 wallAlignRight();
                 fprintf(usartStream_Ptr, "wall-adjust started\n");
-                motors_on = 1;
+                // motors_on = 1;
                 goalTpp = 0;
                 break;
             case '/':
@@ -434,11 +434,11 @@ void debug_comms_task(void)
                 break;
             case '?':
                 fprintf(usartStream_Ptr, "kp%c = %d, ki%c = %d, kd%c = %d, goalTicksTotal = %d\n", modeChar(mode), *kp, modeChar(mode), *ki, modeChar(mode), *kd, (int) goalTicksTotal);
-                motors_on = 0;
+                // motors_on = 0;
                 break;
             default:
                 fprintf(usartStream_Ptr, "invalid - cut motors");
-                motors_on = 0;
+                // motors_on = 0;
         }
         DDRE |= (1 << PE6);
         PORTE |= (1 << PE6);

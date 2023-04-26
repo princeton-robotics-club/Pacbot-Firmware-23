@@ -35,6 +35,6 @@ extern volatile int16_t currTpp;
 extern volatile int16_t goalTpp;
 
 extern int av_pwm;
-extern uint8_t motors_on;
+// extern uint8_t motors_on;
 
 #endif//_CONTROL_H_

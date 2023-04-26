@@ -14,6 +14,9 @@
 #define KD 290
 */
 
+// #define PACBOB_MOTOR_FIX 200
+#define PACBOB_MOTOR_FIX 0
+
 
 // 30:1
 /* 
@@ -58,7 +61,9 @@ int kpSTOP = KPSTOP;
 int kiSTOP = KISTOP;
 int kdSTOP = KDSTOP;
 
-#define AV_PWM_MAX 1100
+// This is the most changeable variable... will be changed at comp...
+// Bring a micro USB cable !
+#define AV_PWM_MAX 900
 int av_pwm = AV_PWM_MAX;
 
 #define GOOD_ITERS_BOUND 2
@@ -68,8 +73,9 @@ int av_pwm = AV_PWM_MAX;
 static volatile int16_t goalHeading = 0;
 
 /* PUT THIS BEHIND GETTERS AND SETTERS AT SOME POINT? */
-uint8_t motors_on = 0;
+// uint8_t motors_on = 0;
 
+// Updates the target heading to newG
 void setGoalHeading(int16_t newG)
 {
     goalHeading = newG;
@@ -77,11 +83,13 @@ void setGoalHeading(int16_t newG)
     while (goalHeading >= 5760) goalHeading -= 5760;
 }
 
+// Returns the target heading
 int16_t getGoalHeading()
 {
     return goalHeading;
 }
 
+// Updates the target heading by adding headingDelta
 void adjustHeading(int16_t headingDelta) {
     goalHeading += headingDelta;
     while (goalHeading < 0)
@@ -90,20 +98,22 @@ void adjustHeading(int16_t headingDelta) {
         goalHeading -= 5760;
 }
 
+// Returns whether we should push off the wall (too close to left or right wall)
 int testPush()
 {
     return ((VL6180xGetDist(RIGHT_FRONT) < PUSH_THRESH && VL6180xGetDist(RIGHT_BACK) < PUSH_THRESH) ||
          (VL6180xGetDist(LEFT_FRONT)  < PUSH_THRESH &&  VL6180xGetDist(LEFT_BACK) < PUSH_THRESH));
 }
 
+// Called once before every straight motion in order to align relative to the wall
 void wallAlignTest()
 {
     // fprintf(usartStream_Ptr, "RF: %d\n", VL6180xGetDist(RIGHT_FRONT));
-    if (!wallAlignRight())
-    {
+    // if (!wallAlignRight())
+    // {
         
-        wallAlignLeft();
-    }    
+    //     wallAlignLeft();
+    // }    
 
     // if (VL6180xGetDist(RIGHT_FRONT) < 50 || VL6180xGetDist(RIGHT_BACK) < 50)
     // {
@@ -249,6 +259,8 @@ void resetSums()
     sumStopErr = 0;
 }
 static int8_t closeIts = 0;
+
+// housekeeping for the off state (which isn't rlly pid)
 void pidOff()
 {
     killMotors();
@@ -257,6 +269,7 @@ void pidOff()
     closeIts = 0;
 }
 
+// PID to stop the robot quickly and without turning off target angle
 void pidStop()
 {
     int16_t currStopErr = 0;
@@ -267,10 +280,13 @@ void pidStop()
 
     static int16_t stoppedCount = 0;
 
+    // If the velocity is (approximately) zero
     if (!currTpp)
     {
-        if (++stoppedCount > 3)
+        // After some iterations of being stopped
+        if (++stoppedCount > 6)
         {
+            // Move to action OFF
             setActionMode(ACT_OFF);
 
             // HERE
@@ -292,7 +308,7 @@ void pidStop()
     {
         lastStopErr = currStopErr;
     }
-
+    // PID calculation
     int32_t speed_adj = ((int32_t)currStopErr * kpSTOP + (int32_t)(currStopErr - lastStopErr) * kdSTOP + (sumStopErr * kiSTOP)) >> 5;
 
 
@@ -308,14 +324,17 @@ void pidStop()
 
     int16_t angle_adj = (currAngErr * kpROT + (currAngErr - lastAngErr) * kdROT + (sumAngErr * kiROT)) >> 5;
 
+    // Use the computed PID adjustments
     setLeftMotorPower((int)speed_adj + (int)angle_adj);
     setRightMotorPower((int)speed_adj - (int)angle_adj);
 
+    // Update the last terms for D term in PID equations
     lastStopErr = currStopErr;
     lastAngErr = currAngErr;
     // fprintf(usartStream_Ptr, "currtpp %d\n", currTpp);
 }
 
+// PID to rotate the robot quickly to it's target angle
 void pidRotate()
 {
     int16_t        currAngErr = 0;
@@ -325,7 +344,7 @@ void pidRotate()
     // static int16_t     lastVelErr = 0;
 
 
-    // Current angle error calculation --> we want between -180 deg and +180 deg for minimum turning    
+    // Current angle error calculation --> we want between -180 deg and +180 deg for minimum turning
     currAngErr = (goalHeading - bno055GetCurrHeading());
     while (currAngErr < -2880) currAngErr += 5760;
     while (currAngErr > +2880) currAngErr -= 5760;
@@ -349,6 +368,7 @@ void pidRotate()
         closeIts++;
         if (closeIts > 10)
         {
+            // Depending on why we are rotating, move to the next state
             closeIts = 0;
             if (getActionMode() == ACT_PUSH_FW)
             {
@@ -389,13 +409,13 @@ void pidRotate()
     else // currAngError is large
     {
         closeIts = 0;
-    }    
+    }
     // fprintf(usartStream_Ptr, "angerr %d\n", currAngErr);
     lastAngErr = currAngErr;
     // lastVelErr = currVelErr;
 }
 
-// Returns a new pwm setting given target speed and current speed
+// Returns a new pwm setting based on how straight we are going
 void pidStraightLine() {
 
     int16_t        currAngErr = 0;
@@ -405,25 +425,26 @@ void pidStraightLine() {
     int16_t            currVelErr = 0;
     static int16_t     lastVelErr = 0;
 
-    int8_t wallCorr = 0;
-    // uint8_t dist = VL6180xGetDist(RIGHT_FRONT);
-    // if (dist < 110)
-    // {
-    //     wallCorr = (((int8_t)dist) - 50) >> 1;
-    // }
-    // else if ((dist = VL6180xGetDist(RIGHT_BACK)) < 110)
-    // {
-    //     wallCorr = (((int8_t)dist) - 50) >> 1;
-    // }
-    // else if ((dist = VL6180xGetDist(LEFT_FRONT)) < 110)
-    // {
-    //     wallCorr = (50 - ((int8_t)dist)) >> 1;
-    // }
-    // else if ((dist = VL6180xGetDist(LEFT_BACK)) < 110)
-    // {
-    //     wallCorr = (50 - ((int8_t)dist)) >> 1;
-    // }
-    // fprintf(usartStream_Ptr, "wallCorr = %d\n", (int8_t)wallCorr);
+    static int8_t wallCorr = 0;
+    wallCorr = (wallCorr * 3) >> 2;
+    uint8_t dist = VL6180xGetDist(RIGHT_FRONT);
+    if (dist < 70)
+    {
+        wallCorr += (((int8_t)dist) - 50) >> 2;
+    }
+    else if ((dist = VL6180xGetDist(RIGHT_BACK)) < 70)
+    {
+        wallCorr += (((int8_t)dist) - 50) >> 2;
+    }
+    else if ((dist = VL6180xGetDist(LEFT_FRONT)) < 70)
+    {
+        wallCorr += (50 - ((int8_t)dist)) >> 2;
+    }
+    else if ((dist = VL6180xGetDist(LEFT_BACK)) < 70)
+    {
+        wallCorr += (50 - ((int8_t)dist)) >> 2;
+    }
+    fprintf(usartStream_Ptr, "wallCorr = %d\n", (int8_t)wallCorr);
 
 
     currAngErr = (goalHeading - bno055GetCurrHeading()); 
@@ -445,6 +466,7 @@ void pidStraightLine() {
 
     if (getActionMode() == ACT_MOVE && (VL6180xGetDist(FRONT_LEFT) < 50 || VL6180xGetDist(FRONT_RIGHT) < 50))
     {
+        wallCorr = 0;
         setActionMode(ACT_ROTATE);
         pidStop();
         return;
@@ -452,6 +474,7 @@ void pidStraightLine() {
     /*
     if (getActionMode() == ACT_MOVE_BW && (VL6180xGetDist(BACK_LEFT) < 50 || VL6180xGetDist(BACK_RIGHT) < 50))
     {
+        wallCorr = 0;
         setActionMode(ACT_STOP);
         pidStop();
         return;
@@ -461,6 +484,7 @@ void pidStraightLine() {
     if ((getActionMode() == ACT_MOVE    && (goalTicksTotal - getAverageEncoderTicks()) < currTpp * 5) ||
         (getActionMode() == ACT_MOVE_BW && (goalTicksTotal - getAverageEncoderTicks()) > currTpp * 5) )
     {
+        wallCorr = 0;
         setActionMode(ACT_STOP);
         pidStop();
         return;
@@ -500,8 +524,8 @@ void pidStraightLine() {
         dir = -1;
     }
 
-    setLeftMotorPower(speed_adj + angle_adj + dir * (av_pwm + 200));
-    setRightMotorPower(-speed_adj - angle_adj + dir * (av_pwm - 200));
+    setLeftMotorPower(speed_adj + angle_adj + dir * (av_pwm + PACBOB_MOTOR_FIX));
+    setRightMotorPower(-speed_adj - angle_adj + dir * (av_pwm - PACBOB_MOTOR_FIX));
 
     // if (currAngErr < 25 && currAngErr > -25)
     // {

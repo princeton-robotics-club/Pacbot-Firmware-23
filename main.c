@@ -38,7 +38,7 @@ volatile Action g_action_mode = ACT_OFF;
 /* Add anything you want to print every 50ms */
 void debug_print(void)
 {
-    // fprintf(usartStream_Ptr, "ang: %ul\n", g_s_targetCardinalDir);
+    fprintf(usartStream_Ptr, "ang: %ul\n", getActionMode());
 
     return;
 }
@@ -112,7 +112,7 @@ void millisTask(void)
     // Run the comms task every 5 ms
     if (!(g_s_millis % 5))
     {
-        commsTask();
+        // commsTask();
         // commsReceiveTask();
         // commsUpdateModeTask();
     }
@@ -240,7 +240,7 @@ int main(void)
     // Main loop
     while (1) 
     {
-        // debug_comms_task();
+        debug_comms_task();
         I2CTask();
     }
 }
