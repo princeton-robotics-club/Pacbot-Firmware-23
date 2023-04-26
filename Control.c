@@ -14,8 +14,8 @@
 #define KD 290
 */
 
-// #define PACBOB_MOTOR_FIX 200
-#define PACBOB_MOTOR_FIX 0
+#define PACBOB_MOTOR_FIX 200
+// #define PACBOB_MOTOR_FIX 0
 
 
 // 30:1

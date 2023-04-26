@@ -112,7 +112,7 @@ void millisTask(void)
     // Run the comms task every 5 ms
     if (!(g_s_millis % 5))
     {
-        // commsTask();
+        commsTask();
         // commsReceiveTask();
         // commsUpdateModeTask();
     }
@@ -240,7 +240,7 @@ int main(void)
     // Main loop
     while (1) 
     {
-        debug_comms_task();
+        // debug_comms_task();
         I2CTask();
     }
 }

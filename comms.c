@@ -196,6 +196,7 @@ void commsReceiveTask(void)
             g_s_commandBuf[1].commType = 0;
             commsUpdateModeTask();
             setGoalHeading(bno055GetCurrHeading());
+            setActionMode(ACT_OFF);
             // UNCOMMENT THIS IF WE RUN INTO ISSUES WITH NOT ACKING GS OFF
             // g_lastCommandSent = tempLastCommand;
             //
