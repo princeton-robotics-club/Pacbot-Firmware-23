@@ -78,6 +78,7 @@ const uint8_t VL6180XRequiredInitData[NUM_PRIVATE_REGS][3] PROGMEM = {
     {0x00, 0x30, 0x00}
 };
 
+#ifdef DEBUG
 /* Confirms the VL6180x id reg has the correct value */
 static uint8_t VL6180xModelIDRegAdd[2] = {0x00, 0x00};
 static int VL6180xConfirmId(int devAddress)
@@ -109,6 +110,7 @@ static int VL6180xConfirmId(int devAddress)
     fprintf(usartStream_Ptr, "Nop\n");
     return 0;
 }
+#endif /*DEBUG*/
 
 /* This function initializes a VL6180x sensor with all of the required
  * and user data */
@@ -223,7 +225,7 @@ I2CInstruction_ID VL6180xAddReadStatus(int devAddress, uint8_t * result)
         I2CTask();
         timeOutCounter++;
     }
-    I2CInstruction_ID ret;
+    I2CInstruction_ID ret = 0;
     while(timeOutCounter < 100 && !(ret=I2CBufferAddInstruction(devAddress, I2C_READ, result, 1)))
     {
         I2CTask();

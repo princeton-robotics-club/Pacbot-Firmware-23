@@ -109,11 +109,10 @@ int testPush()
 void wallAlignTest()
 {
     // fprintf(usartStream_Ptr, "RF: %d\n", VL6180xGetDist(RIGHT_FRONT));
-    // if (!wallAlignRight())
-    // {
-        
-    //     wallAlignLeft();
-    // }    
+    if (!wallAlignRight())
+    {
+        wallAlignLeft();
+    }    
 
     // if (VL6180xGetDist(RIGHT_FRONT) < 50 || VL6180xGetDist(RIGHT_BACK) < 50)
     // {
@@ -284,7 +283,7 @@ void pidStop()
     if (!currTpp)
     {
         // After some iterations of being stopped
-        if (++stoppedCount > 6)
+        if (++stoppedCount > 9)
         {
             // Move to action OFF
             setActionMode(ACT_OFF);
@@ -418,6 +417,11 @@ void pidRotate()
 // Returns a new pwm setting based on how straight we are going
 void pidStraightLine() {
 
+    
+    static int16_t its = 0;
+    its++;
+
+
     int16_t        currAngErr = 0;
     static int16_t lastAngErr = 0;
     // static int8_t closeIts = 0;
@@ -444,7 +448,7 @@ void pidStraightLine() {
     {
         wallCorr += (50 - ((int8_t)dist)) >> 2;
     }
-    fprintf(usartStream_Ptr, "wallCorr = %d\n", (int8_t)wallCorr);
+    // fprintf(usartStream_Ptr, "wallCorr = %d\n", (int8_t)wallCorr);
 
 
     currAngErr = (goalHeading - bno055GetCurrHeading()); 
@@ -455,36 +459,75 @@ void pidStraightLine() {
         sumAngErr = 0;
         if (getActionMode() == ACT_MOVE_BW)
         {
+            its = 0;
             setActionMode(ACT_MOVE_COR_BW);
         }
         else 
         {
+            its = 0;
             setActionMode(ACT_MOVE_COR);
         }
         return;
     }
 
-    if (getActionMode() == ACT_MOVE && (VL6180xGetDist(FRONT_LEFT) < 50 || VL6180xGetDist(FRONT_RIGHT) < 50))
+    uint8_t fr_l = 255;
+    uint8_t fr_r = 255;
+    if (getActionMode() == ACT_MOVE)
+    {
+        fr_l = VL6180xGetDist(FRONT_LEFT);
+        fr_r = VL6180xGetDist(FRONT_RIGHT);
+    }
+    else
+    {
+        fr_l = VL6180xGetDist(BACK_RIGHT);
+        fr_r = VL6180xGetDist(BACK_LEFT);
+    }
+    if (fr_l < 65 && fr_r < 65)
     {
         wallCorr = 0;
+        its = 0;
         setActionMode(ACT_ROTATE);
         pidStop();
         return;
     }
-    /*
-    if (getActionMode() == ACT_MOVE_BW && (VL6180xGetDist(BACK_LEFT) < 50 || VL6180xGetDist(BACK_RIGHT) < 50))
+    if (fr_l < 30 || fr_r < 30 || (abs(currTpp) < 4 && its > 100))
     {
+        // if ((abs(currTpp) < 4 && its > 100))
+        // {
+        //     fprintf(usartStream_Ptr, "YES\n");
+        // }
+        
         wallCorr = 0;
-        setActionMode(ACT_STOP);
-        pidStop();
-        return;
+        if (fr_l < fr_r)
+        {
+            g_s_targetCardinalDir -= 1;
+            if (g_s_targetCardinalDir < 0)
+            {
+                g_s_targetCardinalDir += 4;
+            }
+            adjustHeading(-1440);
+        }
+        else
+        {
+            g_s_targetCardinalDir += 1;
+            if (g_s_targetCardinalDir > 3)
+            {
+                g_s_targetCardinalDir -= 4;
+            }
+            adjustHeading(1440);
+        }
+        resetEncoderDistances();
+        goalTicksTotal = -100;
+        return;            
+    
     }
-    */
+
 
     if ((getActionMode() == ACT_MOVE    && (goalTicksTotal - getAverageEncoderTicks()) < currTpp * 5) ||
         (getActionMode() == ACT_MOVE_BW && (goalTicksTotal - getAverageEncoderTicks()) > currTpp * 5) )
     {
         wallCorr = 0;
+        its = 0;
         setActionMode(ACT_STOP);
         pidStop();
         return;
@@ -524,8 +567,8 @@ void pidStraightLine() {
         dir = -1;
     }
 
-    setLeftMotorPower(speed_adj + angle_adj + dir * (av_pwm + PACBOB_MOTOR_FIX));
-    setRightMotorPower(-speed_adj - angle_adj + dir * (av_pwm - PACBOB_MOTOR_FIX));
+    setLeftMotorPower(speed_adj + angle_adj + PACBOB_MOTOR_FIX + dir * (av_pwm));
+    setRightMotorPower(-speed_adj - angle_adj - PACBOB_MOTOR_FIX + dir * (av_pwm));
 
     // if (currAngErr < 25 && currAngErr > -25)
     // {

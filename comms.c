@@ -289,9 +289,12 @@ void commsUpdateModeTask(void)
         
         // Update the target travel distance
         goalTicksTotal = getAverageEncoderTicks() - dist;
-        //wallAlignTest();
+        // wallAlignTest();
+        
+        
         // Move into the push bw mode
-        setActionMode(ACT_PUSH_BW);
+        // setActionMode(ACT_PUSH_BW);
+        setActionMode(ACT_MOVE_COR_BW);
     }
     else if (g_s_commandBuf[0].commType == ACT_MOVE)
     {
@@ -323,8 +326,11 @@ void commsUpdateModeTask(void)
             resetEncoderDistances();
         }
         goalTicksTotal = getAverageEncoderTicks() + dist;
-        //wallAlignTest();
-        setActionMode(ACT_PUSH_FW);
+        // wallAlignTest();
+
+
+        // setActionMode(ACT_PUSH_FW);
+        setActionMode(ACT_MOVE_COR);
     }
     else
     {
@@ -342,7 +348,7 @@ void commsTask(void)
 }
 
 #define modeChar(mode) (mode ? 'V' : 'A')
-
+#ifdef DEBUG
 void debug_comms_task(void)
 {
     static char k_inp[15];
@@ -401,8 +407,9 @@ void debug_comms_task(void)
                 fprintf(usartStream_Ptr, "kd%c = %d\n", modeChar(mode), *kd);
                 break;
             case 'm':
-                //wallAlignTest();
-                setActionMode(ACT_PUSH_FW);
+                //wallAlignTest();A
+                //k_val > 0 ? setActionMode(ACT_PUSH_FW) : setActionMode(ACT_PUSH_BW);
+                k_val > 0 ? setActionMode(ACT_MOVE_COR) : setActionMode(ACT_MOVE_COR_BW);
                 resetEncoderDistances();
                 goalTicksTotal = k_val;
                 fprintf(usartStream_Ptr, "goalTicksTotal = %d\n", (int) goalTicksTotal);
@@ -445,3 +452,4 @@ void debug_comms_task(void)
         PORTE |= (1 << PE6);
     }
 }
+#endif // DEBUG

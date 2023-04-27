@@ -36,12 +36,14 @@ volatile int16_t goalTpp = 0;
 volatile Action g_action_mode = ACT_OFF;
 
 /* Add anything you want to print every 50ms */
+#ifdef DEBUG
 void debug_print(void)
 {
-    fprintf(usartStream_Ptr, "ang: %ul\n", getActionMode());
+    // fprintf(usartStream_Ptr, "Enc: %ul\n", getRightEncoderDist());
 
     return;
 }
+#endif // DEBUG
 
 // Milliseconds since initialization
 volatile static uint32_t g_s_millis = 0;
@@ -116,7 +118,6 @@ void millisTask(void)
         // commsReceiveTask();
         // commsUpdateModeTask();
     }
-    
 
     // Run PID every 10 milliseconds (offset by 4)
     if (!((g_s_millis+4) % 10))
@@ -166,11 +167,13 @@ void millisTask(void)
         VL6180xTask();
     }
 
+#ifdef DEBUG
     // DEBUG PRINT EVERY 50 ms
     if (!(g_s_millis % 20))
     {
         debug_print();
     }
+#endif // DEBUG
     
 }
 
@@ -240,7 +243,9 @@ int main(void)
     // Main loop
     while (1) 
     {
-        // debug_comms_task();
+        #ifdef DEBUG
+        debug_comms_task();
+        #endif // DEBUG
         I2CTask();
     }
 }

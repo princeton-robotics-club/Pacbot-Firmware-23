@@ -329,12 +329,11 @@ size_t I2CBufferGetCurrentSize()
 int I2CBufferContains(I2CInstruction_ID instr)
 {
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-#ifdef DEBUG
-            if (!instr)
-            {
-                return 0;
-            }
-#endif//Debug
+
+        if (!instr)
+        {
+            return 0;
+        }
 
         // If there are no instructions then it doesn't have instr
         if (ibt->currPt < 0)

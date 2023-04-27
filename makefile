@@ -21,7 +21,7 @@ AID_FORMAT:=$(patsubst %, -I%, $(AID))
 # Don't edit above
 # Edit below
 
-DEBUG=-DDEBUG
+DEBUG=#-DDEBUG
 CC=avr-gcc
 
 DASH_F_ARGS=-funsigned-char -funsigned-bitfields -ffunction-sections -fdata-sections -fpack-struct -fshort-enums
