@@ -39,7 +39,7 @@ volatile Action g_action_mode = ACT_OFF;
 #ifdef DEBUG
 void debug_print(void)
 {
-    // fprintf(usartStream_Ptr, "Enc: %ul\n", getRightEncoderDist());
+    // fprintf(usartStream_Ptr, "ANG: %ul\n", bno055GetCurrHeading());
 
     return;
 }
@@ -244,7 +244,7 @@ int main(void)
     while (1) 
     {
         #ifdef DEBUG
-        debug_comms_task();
+        // debug_comms_task();
         #endif // DEBUG
         I2CTask();
     }

@@ -14,8 +14,8 @@
 #define KD 290
 */
 
-#define PACBOB_MOTOR_FIX 200
-// #define PACBOB_MOTOR_FIX 0
+// #define PACBOB_MOTOR_FIX 200
+#define PACBOB_MOTOR_FIX 0
 
 
 // 30:1
@@ -63,7 +63,7 @@ int kdSTOP = KDSTOP;
 
 // This is the most changeable variable... will be changed at comp...
 // Bring a micro USB cable !
-#define AV_PWM_MAX 900
+#define AV_PWM_MAX 850
 int av_pwm = AV_PWM_MAX;
 
 #define GOOD_ITERS_BOUND 2
@@ -109,11 +109,17 @@ int testPush()
 void wallAlignTest()
 {
     // fprintf(usartStream_Ptr, "RF: %d\n", VL6180xGetDist(RIGHT_FRONT));
-    if (!wallAlignRight())
+    uint8_t RF = VL6180xGetDist(RIGHT_FRONT);
+    uint8_t RB = VL6180xGetDist(RIGHT_BACK);
+    uint8_t LF = VL6180xGetDist(LEFT_FRONT);
+    uint8_t LB = VL6180xGetDist(LEFT_BACK);
+    if (((RF < RB) != (LF < LB)) && RF < 110 && LF < 110 && RB < 110 && LB < 110)
     {
-        wallAlignLeft();
-    }    
-
+        if (!wallAlignRight())
+        {
+            wallAlignLeft();
+        }  
+    }
     // if (VL6180xGetDist(RIGHT_FRONT) < 50 || VL6180xGetDist(RIGHT_BACK) < 50)
     // {
     //     adjustHeading(VL6180xGetDist(RIGHT_FRONT) - 50);
@@ -283,7 +289,7 @@ void pidStop()
     if (!currTpp)
     {
         // After some iterations of being stopped
-        if (++stoppedCount > 9)
+        if (++stoppedCount > 5)
         {
             // Move to action OFF
             setActionMode(ACT_OFF);
@@ -336,6 +342,19 @@ void pidStop()
 // PID to rotate the robot quickly to it's target angle
 void pidRotate()
 {
+    static int16_t its = 0;
+    its++;
+    if (its > 250)
+    {
+        adjustHeading(1440);
+        g_s_targetCardinalDir += 1;
+        if (g_s_targetCardinalDir > 4)
+        {
+            g_s_targetCardinalDir -= 4;
+        }
+        its = 0;
+    }
+    
     int16_t        currAngErr = 0;
     static int16_t lastAngErr = 0;
 
@@ -358,6 +377,7 @@ void pidRotate()
 
     int32_t angle_adj = ((int32_t)currAngErr * kpROT + (int32_t)(currAngErr - lastAngErr) * kdROT + (sumAngErr * kiROT)) >> 5;
     // int32_t speed_adj = ((int32_t)currVelErr * kpV + (int32_t)(currVelErr - lastVelErr) * kdV + (sumVelErr * kiV)) >> 5;
+    
 
     setLeftMotorPower((int)angle_adj);
     setRightMotorPower(0 - (int)angle_adj);
@@ -368,6 +388,7 @@ void pidRotate()
         if (closeIts > 10)
         {
             // Depending on why we are rotating, move to the next state
+            its = 0;
             closeIts = 0;
             if (getActionMode() == ACT_PUSH_FW)
             {
