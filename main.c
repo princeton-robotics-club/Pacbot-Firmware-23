@@ -39,7 +39,7 @@ volatile Action g_action_mode = ACT_OFF;
 #ifdef DEBUG
 void debug_print(void)
 {
-    // fprintf(usartStream_Ptr, "ANG: %ul\n", bno055GetCurrHeading());
+    // fprintf(usartStream_Ptr, "state: %ul\n", getActionMode());
 
     return;
 }

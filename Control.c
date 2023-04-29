@@ -109,6 +109,8 @@ int testPush()
 void wallAlignTest()
 {
     // fprintf(usartStream_Ptr, "RF: %d\n", VL6180xGetDist(RIGHT_FRONT));
+
+    // Old (tested) version
     uint8_t RF = VL6180xGetDist(RIGHT_FRONT);
     uint8_t RB = VL6180xGetDist(RIGHT_BACK);
     uint8_t LF = VL6180xGetDist(LEFT_FRONT);
@@ -120,6 +122,29 @@ void wallAlignTest()
             wallAlignLeft();
         }  
     }
+    
+
+    // ALternate version
+    /*
+    uint8_t RF = VL6180xGetDist(RIGHT_FRONT);
+    uint8_t RB = VL6180xGetDist(RIGHT_BACK);
+    uint8_t LF = VL6180xGetDist(LEFT_FRONT);
+    uint8_t LB = VL6180xGetDist(LEFT_BACK);
+    if (((RF < RB) != (LF < LB)) && RF < 200 && LF < 200 && RB < 200 && LB < 200)
+    {
+        if (!wallAlignRight())
+        {
+            wallAlignLeft();
+        }  
+    }
+    */
+
+    // New Version
+    // if (!wallAlignRight())
+    // {
+    //     wallAlignLeft();
+    // }  
+
     // if (VL6180xGetDist(RIGHT_FRONT) < 50 || VL6180xGetDist(RIGHT_BACK) < 50)
     // {
     //     adjustHeading(VL6180xGetDist(RIGHT_FRONT) - 50);
@@ -344,7 +369,7 @@ void pidRotate()
 {
     static int16_t its = 0;
     its++;
-    if (its > 250)
+    if (its > 175)
     {
         adjustHeading(1440);
         g_s_targetCardinalDir += 1;
@@ -376,7 +401,7 @@ void pidRotate()
     // sumVelErr += currVelErr;
 
     int32_t angle_adj = ((int32_t)currAngErr * kpROT + (int32_t)(currAngErr - lastAngErr) * kdROT + (sumAngErr * kiROT)) >> 5;
-    // int32_t speed_adj = ((int32_t)currVelErr * kpV + (int32_t)(currVelErr - lastVelErr) * kdV + (sumVelErr * kiV)) >> 5;
+    // int32_t speed_adj = ((int32_t)currVelErr * kpV + (int32_Pt)(currVelErr - lastVelErr) * kdV + (sumVelErr * kiV)) >> 5;
     
 
     setLeftMotorPower((int)angle_adj);
