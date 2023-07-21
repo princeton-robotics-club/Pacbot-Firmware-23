@@ -582,7 +582,6 @@ void pidStraightLine() {
     // wallAlignTest();
 
     // Current angle error calculation --> we want between -180 deg and +180 deg for minimum turning    
-
     if (!lastAngErr)
     {
         lastAngErr = currAngErr;
