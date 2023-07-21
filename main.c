@@ -24,26 +24,68 @@
 // Tick buffer - low-pass filtering for encoders using a ring buffer
 #define TICK_BUFF_SIZE_BITS 2
 #define TICK_BUFF_SIZE (1 << TICK_BUFF_SIZE_BITS)
-volatile int64_t tickBuf[TICK_BUFF_SIZE] = {0};
+volatile int16_t tickBuf[TICK_BUFF_SIZE] = {0};
 volatile int tickBufIdx = 0;
 
 // Tpp = ticks per period, a measure of how fast the encoders are going
 volatile int16_t currTpp = 0;
 volatile int16_t goalTpp = 0;
 
+/* Stores the current action state. See defines.h. DO NOT UPDATE ON
+ * IT'S OWN UNLESS YOU KNOW WHAT YOU'RE DOING... USE THE FN */
+volatile Action g_action_mode = ACT_OFF;
+
 /* Add anything you want to print every 50ms */
+#ifdef DEBUG
 void debug_print(void)
 {
-    // fprintf(usartStream_Ptr, "rf: %d, ", VL6180xGetDist(RIGHT_FRONT));
-    // fprintf(usartStream_Ptr, "rb: %d\n", VL6180xGetDist(RIGHT_BACK));
+    // fprintf(usartStream_Ptr, "state: %ul\n", getActionMode());
 
     return;
 }
+#endif // DEBUG
 
 // Milliseconds since initialization
 volatile static uint32_t g_s_millis = 0;
 volatile static int8_t g_s_milliFlag = 0;
-volatile static int64_t cosErr;
+
+// Set's the action mode (intelligently)
+void setActionMode(Action mode)
+{
+    if (mode == ACT_PUSH_FW || mode == ACT_PUSH_BW)
+    {
+        // fprintf(usartStream_Ptr, "HERE2\n");
+        if (!testPush())
+        {
+            if (mode == ACT_PUSH_BW)
+            {
+                // fprintf(usartStream_Ptr, "HERE: mode: %d\n", mode);
+                mode = ACT_MOVE_COR_BW;
+            }
+            else
+            {
+                mode = ACT_MOVE_COR;
+            }   
+        }
+        else
+        {
+            adjustHeading(1000);
+        }
+    }
+    if (mode == ACT_MOVE_COR || mode == ACT_MOVE_COR_BW)
+    {
+        wallAlignTest();
+    }
+
+    g_action_mode = mode;
+}
+
+// Gets the action mode
+Action getActionMode()
+{
+    return g_action_mode;
+}
+
 
 // This is run every ~1 ms
 void millisTask(void)
@@ -69,24 +111,50 @@ void millisTask(void)
         bno055Task();
     }
 
+    // Run the comms task every 5 ms
     if (!(g_s_millis % 5))
     {
-        // commsTask();
+        commsTask();
+        // commsReceiveTask();
+        // commsUpdateModeTask();
     }
-    
 
     // Run PID every 10 milliseconds (offset by 4)
     if (!((g_s_millis+4) % 10))
     {
-
-        pidStraightLine();
+        switch (g_action_mode)
+        {
+        case ACT_ROTATE:
+        case ACT_MOVE_COR:
+        case ACT_MOVE_COR_BW:
+            pidRotate();
+            break;
+        case ACT_MOVE:
+            pidStraightLine();
+            break;
+        case ACT_MOVE_BW:
+            pidStraightLine();
+            break;
+        case ACT_STOP:
+            pidStop();
+            break;
+        case ACT_PUSH_FW:
+            pidRotate();
+            break;
+        case ACT_PUSH_BW:
+            pidRotate();
+            break;
+        default:
+            pidOff();
+            break;
+        }
     }
 
     // Ask for Encoder data every 5 milliseconds (offset by 3)
     if (!((g_s_millis+3) % 5))
     {
         // Uses a ring buffer to low-pass filter the encoder speeds
-        getAverageEncoderTicks((int64_t *) (tickBuf + tickBufIdx));
+        tickBuf[tickBufIdx] = getAverageEncoderTicks();
         currTpp = tickBuf[tickBufIdx] - tickBuf[(tickBufIdx + 1) % TICK_BUFF_SIZE];
         if (!((goalTpp >= 0) ^ (tickBuf[tickBufIdx] >= goalTicksTotal)))
             goalTpp = 0;
@@ -99,11 +167,13 @@ void millisTask(void)
         VL6180xTask();
     }
 
+#ifdef DEBUG
     // DEBUG PRINT EVERY 50 ms
     if (!(g_s_millis % 20))
     {
         debug_print();
     }
+#endif // DEBUG
     
 }
 
@@ -161,11 +231,21 @@ int main(void)
 
     // Initializes motors
     motorsInit();
-    
+
+    // Start the goal heading at the starting angle
+    I2CInstruction_ID firstAngBack = bno055Task();
+    while (I2CBufferContains(firstAngBack))
+    {
+        I2CTask();
+    }
+    setGoalHeading(bno055GetCurrHeading());
+
     // Main loop
     while (1) 
     {
-        debug_comms_task();
+        #ifdef DEBUG
+        // debug_comms_task();
+        #endif // DEBUG
         I2CTask();
     }
 }
