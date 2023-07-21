@@ -63,7 +63,7 @@ int kdSTOP = KDSTOP;
 
 // This is the most changeable variable... will be changed at comp...
 // Bring a micro USB cable !
-#define AV_PWM_MAX 850
+#define AV_PWM_MAX 1000
 int av_pwm = AV_PWM_MAX;
 
 #define GOOD_ITERS_BOUND 2
@@ -115,7 +115,7 @@ void wallAlignTest()
     uint8_t RB = VL6180xGetDist(RIGHT_BACK);
     uint8_t LF = VL6180xGetDist(LEFT_FRONT);
     uint8_t LB = VL6180xGetDist(LEFT_BACK);
-    if (((RF < RB) != (LF < LB)) && RF < 110 && LF < 110 && RB < 110 && LB < 110)
+    if (((RF < RB) != (LF < LB)) && RF < 150 && LF < 150 && RB < 150 && LB < 150)
     {
         if (!wallAlignRight())
         {
@@ -311,7 +311,7 @@ void pidStop()
     static int16_t stoppedCount = 0;
 
     // If the velocity is (approximately) zero
-    if (!currTpp)
+    if (abs(currTpp) < 2)
     {
         // After some iterations of being stopped
         if (++stoppedCount > 5)
@@ -407,10 +407,10 @@ void pidRotate()
     setLeftMotorPower((int)angle_adj);
     setRightMotorPower(0 - (int)angle_adj);
 
-    if (currAngErr < 25 && currAngErr > -25)
+    if (currAngErr < 35 && currAngErr > -35)
     {
         closeIts++;
-        if (closeIts > 10)
+        if (closeIts > 8)
         {
             // Depending on why we are rotating, move to the next state
             its = 0;
@@ -480,19 +480,19 @@ void pidStraightLine() {
     uint8_t dist = VL6180xGetDist(RIGHT_FRONT);
     if (dist < 70)
     {
-        wallCorr += (((int8_t)dist) - 50) >> 2;
+        wallCorr += (((int8_t)dist) - 50) >> 1;
     }
     else if ((dist = VL6180xGetDist(RIGHT_BACK)) < 70)
     {
-        wallCorr += (((int8_t)dist) - 50) >> 2;
+        wallCorr += (((int8_t)dist) - 50) >> 1;
     }
     else if ((dist = VL6180xGetDist(LEFT_FRONT)) < 70)
     {
-        wallCorr += (50 - ((int8_t)dist)) >> 2;
+        wallCorr += (50 - ((int8_t)dist)) >> 1;
     }
     else if ((dist = VL6180xGetDist(LEFT_BACK)) < 70)
     {
-        wallCorr += (50 - ((int8_t)dist)) >> 2;
+        wallCorr += (50 - ((int8_t)dist)) >> 1;
     }
     // fprintf(usartStream_Ptr, "wallCorr = %d\n", (int8_t)wallCorr);
 
